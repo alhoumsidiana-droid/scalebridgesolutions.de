@@ -9,7 +9,7 @@
     delivery: 'Our delivery model is centered on Damascus, Syria, serving GCC businesses. Team availability and launch timing are confirmed during scoping.',
     quote: 'To request a tailored proposal, email info@scalebridgesolutions.de with your company, team size, channels, languages and preferred coverage.'
   };
-  function setOpen(open) { panel.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); if(open) close.focus(); else toggle.focus(); }
+  function setOpen(open) { panel.hidden = !open; document.getElementById('chat-widget').classList.toggle('is-open', open); toggle.setAttribute('aria-expanded', String(open)); if(open) close.focus(); else toggle.focus(); }
   toggle.addEventListener('click', () => setOpen(panel.hidden));
   close.addEventListener('click', () => setOpen(false));
   document.addEventListener('keydown', e => {if(e.key === 'Escape' && !panel.hidden) setOpen(false);});
