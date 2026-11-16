@@ -1,7 +1,8 @@
 (() => {
   const widget=document.getElementById('chat-widget'),panel=document.getElementById('chat-panel'),toggle=document.getElementById('chat-toggle'),close=document.getElementById('chat-close'),messages=document.getElementById('chat-messages');
-  const API=window.SCALEBRIDGE_CHAT_API || ''; let history=[],busy=false;
-  const ar=()=>/[\u0600-\u06ff]/.test(history.at(-1)?.content||'');
+  const API = 'https://scalebridge-ai.solitary-snowflake-f1f3.workers.dev/chat';
+let history = [], busy = false;
+const ar=()=>/[\u0600-\u06ff]/.test(history.at(-1)?.content||'');
   function bubble(value,who='bot'){const p=document.createElement('p');p.className='chat-bubble '+(who==='user'?'chat-user':'');p.textContent=value;p.dir='auto';messages.append(p);messages.scrollTop=messages.scrollHeight;return p}
   function open(v){panel.hidden=!v;widget.classList.toggle('is-open',v);toggle.setAttribute('aria-expanded',String(v));if(v)input.focus();else toggle.focus()}
   const form=document.createElement('form');form.className='chat-form';form.innerHTML='<input aria-label="Your message" maxlength="1200" placeholder="Ask in English or العربية..." required><button type="submit" aria-label="Send message">➤</button>';
