@@ -13,27 +13,51 @@ function init(){
  toggle.addEventListener('click',()=>open(panel.hidden));close.addEventListener('click',()=>open(false));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)open(false)});
  const actions=document.createElement('div');actions.className='chat-extra';
- const leadBtn=document.createElement('button');leadBtn.type='button';leadBtn.textContent='Generate My Proposal';actions.append(leadBtn);
+ const leadBtn=document.createElement('button');leadBtn.type='button';leadBtn.textContent='Generate My Preliminary Proposal';actions.append(leadBtn);
  const disclaimer=panel.querySelector('.chat-disclaimer');if(disclaimer)disclaimer.textContent='Transparent pricing. No hidden fees. Preliminary proposals are not binding offers. Do not share confidential customer data.';
  const subtitle=panel.querySelector('.chat-header small');if(subtitle)subtitle.textContent='AI Assistant · Instant Estimates & Proposals';
  const choices=panel.querySelector('.chat-choices');if(choices)choices.replaceWith(actions);else panel.append(actions);
  if(disclaimer)disclaimer.before(form);else panel.append(form);
  const lead=document.createElement('form');lead.className='chat-lead';lead.hidden=true;
- lead.innerHTML='<strong>Generate Your Preliminary Proposal</strong><p>Enter two details to receive a personalized preliminary proposal based on our published rates.</p><input name="company" aria-label="Company name" placeholder="Company name" maxlength="120" required><input name="email" type="email" aria-label="Business email" placeholder="Business email" maxlength="254" required><label class="chat-consent"><input type="checkbox" name="consent" required><span>I agree to use these details to prepare my preliminary proposal.</span></label><button type="submit">Generate My Proposal</button><button type="button" class="chat-cancel">Cancel</button><small>This is a preliminary estimate, not a final contractual offer. Final terms are confirmed by ScaleBridge Solutions.</small>';
+ lead.innerHTML='<strong>Generate Your Preliminary Proposal</strong><p>Enter two details to receive a personalized preliminary proposal based on our published rates.</p><input name="company" aria-label="Company name" placeholder="Company name" maxlength="120" required><input name="email" type="email" aria-label="Business email" placeholder="Business email" maxlength="254" required><label class="chat-consent"><input type="checkbox" name="consent" required><span>I agree to use these details to prepare my preliminary proposal.</span></label><button type="submit" class="chat-generate-submit">Generate Preliminary Proposal</button><button type="button" class="chat-cancel">Cancel</button><small>This is a preliminary estimate, not a final contractual offer. Final terms are confirmed by ScaleBridge Solutions.</small>';
  actions.after(lead);
- leadBtn.addEventListener('click',()=>{lead.hidden=!lead.hidden;if(!lead.hidden)lead.querySelector('input').focus()});
- lead.querySelector('.chat-cancel').addEventListener('click',()=>{lead.hidden=true});
+ const proposalStyle=document.createElement('style');
+ proposalStyle.textContent=`
+ .chat-form[hidden],.chat-extra[hidden],.chat-messages[hidden],.chat-disclaimer[hidden]{display:none!important}
+ .chat-panel.proposal-mode .chat-lead{display:flex!important;flex-direction:column;gap:12px;max-height:none!important;min-height:0;flex:1 1 auto;overflow-y:auto;padding:18px}
+ .chat-panel.proposal-mode .chat-lead[hidden]{display:none!important}
+ .chat-panel.proposal-mode .chat-lead .chat-generate-submit{background:#d7aa55;color:#061629;min-height:48px}
+ .chat-panel.proposal-mode .chat-lead .chat-cancel{min-height:40px}
+ .chat-panel.proposal-mode{min-height:400px}
+ `;
+ document.head.append(proposalStyle);
+ // The normal chat composer must never compete with the proposal form.
+ function showProposalForm(show){
+   lead.hidden=!show;
+   form.hidden=show;
+   actions.hidden=show;
+   if(disclaimer)disclaimer.hidden=show;
+   messages.hidden=show;
+   panel.classList.toggle('proposal-mode',show);
+   if(show){
+     const first=lead.querySelector('input[name="company"]');
+     if(first)first.focus();
+   }else{input.focus();}
+ }
+ leadBtn.addEventListener('click',()=>showProposalForm(true));
+ lead.querySelector('.chat-cancel').addEventListener('click',()=>showProposalForm(false));
  function emailButton(text,company){const b=document.createElement('button');b.type='button';b.className='chat-proposal-send';b.textContent='Email This Proposal to ScaleBridge';b.addEventListener('click',()=>{window.location.href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Preliminary Proposal - '+company)+'&body='+encodeURIComponent(text+'\n\nPlease contact me to discuss the final proposal.')});messages.append(b);messages.scrollTop=messages.scrollHeight;}
  async function request(payload,signal){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal});if(!r.ok)throw Error('HTTP '+r.status);return r.json();}
  lead.addEventListener('submit',async e=>{
  e.preventDefault();if(busy)return;
  const d=new FormData(lead),company=String(d.get('company')||'').trim(),email=String(d.get('email')||'').trim(),consent=d.get('consent')==='on';
- if(!company||!email||!consent)return;
- busy=true;input.disabled=true;const wait=bubble('Preparing your personalized preliminary proposal...'),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+ if(!company||!email||!consent){lead.reportValidity();return;}
+ busy=true;input.disabled=true;const submitButton=lead.querySelector('.chat-generate-submit');submitButton.disabled=true;const wait=bubble('Preparing your personalized preliminary proposal...'),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
  try{const result=await request({message:'Generate preliminary proposal',history:history.slice(-16),proposal:{company,email,consent}},controller.signal);
  wait.textContent=result.reply||'Unable to prepare your proposal. Please try again.';
- if(result.proposalReady&&result.proposalText){lead.hidden=true;history.push({role:'assistant',content:result.proposalText});emailButton(result.proposalText,company);}
- }catch(err){console.warn('Proposal error',err);wait.textContent='We could not generate your proposal right now. Please contact '+EMAIL+'.';}
+ if(result.proposalReady&&result.proposalText){showProposalForm(false);history.push({role:'assistant',content:result.proposalText});emailButton(result.proposalText,company);}
+ else if(result.reply){showProposalForm(false);}
+ }catch(err){console.warn('Proposal error',err);wait.textContent='We could not generate your proposal right now. Please contact '+EMAIL+'.';showProposalForm(false);}
  finally{clearTimeout(timeout);busy=false;input.disabled=false;messages.scrollTop=messages.scrollHeight;}
  });
  const facts={services:'ScaleBridge provides managed Arabic and English customer support, data annotation, content moderation and AI-assisted workflows.',pricing:'Published monthly rates: Standard Agent $900, Night Shift Agent $1,050, Senior Agent $1,050, Team Leader $1,350, Group Leader $1,650, QA Analyst $1,100 and Operations Manager $2,000. Standard minimum support team: 5 agents. No automatic volume discounts. No hidden fees.',center:'ScaleBridge is developing its Damascus delivery operation. Facility arrangements are confirmed for each project.',compliance:'ScaleBridge has prepared an internal information security framework. Project-specific controls require verification. No ISO certification is claimed.',coverage:'24/7 coverage requires staffing and shift planning. Night shifts and additional requirements must be scoped.',contact:'Use Generate My Proposal or email info@scalebridgesolutions.de.'};
