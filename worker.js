@@ -1,8 +1,10 @@
 
 const ORIGIN = "https://scalebridgesolutions.de";
+const EMAIL = "info@scalebridgesolutions.de";
 const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8-fast";
+const SHRINKAGE = 0.25;
 
-const RATES = Object.freeze({
+const RATES = {
   agent: 900,
   nightAgent: 1050,
   seniorAgent: 1050,
@@ -10,787 +12,1474 @@ const RATES = Object.freeze({
   groupLeader: 1650,
   qaAnalyst: 1100,
   operationsManager: 2000
-});
+};
 
-const ROLES = [
-  {
-    key: "nightAgent",
-    name: "Night Shift Agent",
-    pattern: "night\\s*(?:shift\\s*)?agents?|موظف(?:ين|ون|ي)?\\s*(?:شفت\\s*)?ليلي"
-  },
-  {
-    key: "seniorAgent",
-    name: "Senior Agent",
-    pattern: "senior\\s*agents?|موظف(?:ين|ون|ي)?\\s*أقدم"
-  },
-  {
-    key: "teamLeader",
-    name: "Team Leader",
-    pattern: "team\\s*leaders?|TLs?|مشرف(?:ين|ون)?(?:\\s*فريق)?|قائد\\s*فريق"
-  },
-  {
-    key: "groupLeader",
-    name: "Group Leader",
-    pattern: "group\\s*leaders?|GLs?|قائد\\s*مجموعة"
-  },
-  {
-    key: "qaAnalyst",
-    name: "QA Analyst",
-    pattern: "QA(?:\\s*analysts?)?|quality\\s*analysts?|موظف(?:ين|ون|ي)?\\s*جودة|مراقب\\s*جودة"
-  },
-  {
-    key: "operationsManager",
-    name: "Operations Manager",
-    pattern: "operations\\s*managers?|OMs?|مدير\\s*عمليات"
-  },
-  {
-    key: "agent",
-    name: "Standard Support Agent",
-    pattern: "(?:standard\\s+|support\\s+|customer\\s+(?:service|support)\\s+)?agents?|موظف(?:ين|ون|ي)?(?:\\s*دعم\\s*عملاء)?|موظفين|موظف"
-  }
-];
+const NAMES = {
+  agent: "Standard Support Agent",
+  nightAgent: "Night Shift Agent",
+  seniorAgent: "Senior Agent",
+  teamLeader: "Team Leader",
+  groupLeader: "Group Leader",
+  qaAnalyst: "QA Analyst",
+  operationsManager: "Operations Manager"
+};
 
 const SYSTEM = `
-You are ScaleBridge Assistant, a professional bilingual
-AI Sales Consultant for ScaleBridge Solutions.
+You are ScaleBridge AI Assistant, a confident,
+helpful B2B sales consultant for ScaleBridge Solutions.
 
-LANGUAGE AND STYLE
-- Reply in the language of the customer's latest message.
-- Use professional, natural Arabic or English.
-- Be concise, confident, clear and helpful.
-- Answer the question directly.
-- Ask no more than one follow-up question.
-- Never invent prices, facts, contracts or certifications.
-- Do not use markdown tables.
-- Never claim to have emailed or saved a lead.
+Respond in the language of the latest user message.
 
-ABOUT SCALEBRIDGE
-ScaleBridge Solutions provides managed Arabic and English
-customer support for GCC businesses and other markets.
+In Arabic use clear, elegant Modern Standard Arabic
+suitable for GCC businesses, never colloquial.
+
+In English use warm, polished, concise business English.
+
+Keep most answers to 60-110 words, with at most
+four short bullets.
+
+Answer the question directly, do not repeat previous
+information, ask at most one useful next-step question.
+
+Longer answers only when explicitly requested.
+
+Do not claim a meeting is booked or a proposal email
+was sent unless confirmed by the server.
+
+COMPANY:
+ScaleBridge offers managed Arabic- and English-language
+customer support for GCC clients.
 
 Services include:
-- Email, live chat, social media and helpdesk support
-- Data annotation and labeling
+- Inbound and outbound customer support
+- Customer follow-ups, surveys and engagement
+- Email, live chat, social media and helpdesk
+- AI-powered customer support and automation solutions
+- Data annotation
 - Content moderation
-- AI-powered website assistants
-- AI-assisted email workflows
-- Human and AI customer support solutions
 
-Managed services can include recruiting, screening,
-language assessment, basic training, onboarding,
-team coordination, QA, KPI reporting and escalation
-handling, according to the agreed scope.
+Sales calling and lead generation require scope confirmation.
 
-ScaleBridge's delivery strategy includes Damascus,
-Syria. Do not claim an operational center, Dubai
-registration, security certification or infrastructure
-that has not been verified.
+We combine human expertise with appropriate automation.
 
-COMMERCIAL PRICING
-Published monthly client rates in USD per FTE:
+Describe integrations, bots and custom AI projects as
+scoped solutions, not already deployed guarantees.
+
+Delivery strategy includes Damascus, Syria.
+
+Never claim Dubai registration, a physical center,
+certifications, client references or operating
+capabilities are complete without verification.
+
+QUALITY AND ACCOUNTABILITY:
+Agree on SLAs and KPIs with the client.
+
+Define QA scorecards, sample and review interactions,
+provide coaching and calibration.
+
+Track CSAT, first response time, resolution time,
+backlog and AHT where relevant.
+
+Share weekly KPI reports and escalation paths.
+
+Describe these as a proposed operational framework,
+not a proven existing certification or guaranteed outcome.
+
+PRICING:
+Published monthly USD/FTE rates:
 
 Standard Support Agent: $900
-Night Shift Agent: $1050
-Senior Agent: $1050
-Team Leader: $1350
-Group Leader: $1650
-QA Analyst: $1100
-Operations Manager: $2000
+Night Shift Agent: $1,050
+Senior Agent: $1,050
+Team Leader: $1,350
+Group Leader: $1,650
+QA Analyst: $1,100
+Operations Manager: $2,000
 
-WFM, AI services and special integrations require
-individual quotations.
+No automatic volume discounts or hidden fees.
 
-No automatic volume discounts.
-Standard Agent pricing is $900 regardless of team size.
+Do not invent any price for AI automation,
+data annotation, content moderation, software,
+setup or other unpriced services.
 
-The standard minimum customer support team is 5 agents.
-A smaller requirement may be discussed but is not
-automatically eligible for a standard proposal.
+These require scope review and a custom quote.
 
-Never add unrequested roles to a calculation.
+A standard starting team can be five agents.
+Smaller teams including one agent can be
+discussed individually.
 
-TRANSPARENT PRICING
-Transparent Pricing. No Hidden Fees.
+Never present five as a hard minimum.
 
-Published role rates are real commercial rates.
-The preliminary estimate is calculated from the
-roles and quantities selected by the customer.
+STAFFING:
+Team Leader around ten agents.
+QA around 20-30 agents.
+Group Leader around 30+ agents.
+Operations Manager around 40-60 agents.
 
-A final commercial proposal confirms:
-- Service scope
-- Coverage hours and shift arrangements
-- Languages and channels
-- Software or integrations
-- Special training and operational requirements
-- Applicable taxes and project-specific costs
+These are recommendations only,
+never mandatory additions.
 
-Never suggest that published prices are arbitrary
-or misleading.
+Do not calculate 24/7 staffing yourself.
+The deterministic server calculator handles it.
 
-PRELIMINARY PROPOSALS
-A preliminary proposal is NOT a final contractual offer.
-It is based on published rates and customer-provided
-requirements.
+Distinguish total employed agents from
+simultaneously online agents.
 
-The final commercial proposal is issued by the
-ScaleBridge team after scope confirmation.
+Never assume 24/7 from 8 hours per day.
 
-All additional costs must be disclosed and agreed
-in writing before commitment.
+All estimates are nonbinding and require
+scope confirmation.
 
-STAFFING RECOMMENDATIONS
-These are optional:
-- Approximately 1 Team Leader per 10 agents
-- Senior Agent or shared supervision for small teams
-- Dedicated QA commonly considered around 20-30 agents
-- WFM commonly considered around 40-60 agents
-- Group Leader or Operations Manager may be useful
-  around 40-60 agents depending on complexity
-- Avoid overlapping unnecessary management roles
-- Clients may choose different supervision ratios
+Meeting requests are not confirmed bookings.
 
-24/7 COVERAGE
-Distinguish total agents from simultaneous agents.
-Each continuously staffed position requires
-168 coverage hours per week.
-
-Four simultaneous agents require 672 hours/week.
-At 40 hours per FTE, theoretical staffing is 16.8 FTE.
-A preliminary range of 20-24 FTE may be appropriate
-after accounting for unavailable time.
-
-Night-shift costs and other requirements must be
-evaluated separately.
-
-SECURITY
-Do not claim ISO, SOC 2 or GDPR certification.
-Never request passwords or sensitive customer records.
-
-CONTACT
-info@scalebridgesolutions.de
+Contact: ${EMAIL}.
 `;
 
-function normalize(value) {
-  return String(value || "")
-    .replace(/[٠-٩]/g, d =>
-      String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/[۰-۹]/g, d =>
-      String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+function norm(v) {
+  return String(v ?? "")
+    .replace(/[٠-٩]/g, x =>
+      String("٠١٢٣٤٥٦٧٨٩".indexOf(x))
+    )
+    .replace(/[۰-۹]/g, x =>
+      String("۰۱۲۳۴۵۶۷۸۹".indexOf(x))
+    )
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function isArabic(text) {
-  return /[\u0600-\u06FF]/.test(text);
+function isAr(s) {
+  return /[\u0600-\u06ff]/.test(s || "");
 }
 
-function money(value) {
-  return "$" + value.toLocaleString("en-US");
+function usd(n) {
+  return "$" + Number(n).toLocaleString("en-US");
 }
 
-function validCount(n) {
-  return Number.isSafeInteger(n) && n > 0 && n <= 10000;
+function good(n) {
+  return Number.isSafeInteger(n) &&
+    n > 0 &&
+    n <= 5000;
 }
 
-function cleanReply(value) {
-  return String(value || "")
-    .replace(/\*\*/g, "")
-    .replace(/^#{1,6}\s+/gm, "")
-    .trim();
+function safe(v, max = 120) {
+  return typeof v === "string"
+    ? v.trim().slice(0, max)
+        .replace(/[\x00-\x1f]/g, " ")
+    : "";
 }
 
-function corsHeaders(origin) {
-  const allowed =
-    origin === ORIGIN ||
-    origin === "https://www.scalebridgesolutions.de";
-
-  return {
-    "Access-Control-Allow-Origin": allowed ? origin : ORIGIN,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Max-Age": "86400",
-    "Content-Type": "application/json; charset=utf-8",
-    "Vary": "Origin"
-  };
+function emailOK(v) {
+  return typeof v === "string" &&
+    v.length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-function json(data, status, origin) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: corsHeaders(origin)
-  });
+function cleanHistory(h) {
+  return Array.isArray(h)
+    ? h.slice(-20)
+        .filter(x =>
+          x &&
+          ["user", "assistant"].includes(x.role) &&
+          typeof x.content === "string"
+        )
+        .map(x => ({
+          role: x.role,
+          content: x.content.slice(0, 2000)
+        }))
+    : [];
 }
 
-function sanitizeHistory(history) {
-  if (!Array.isArray(history)) return [];
+const re247 =
+  /24\s*\/\s*7|24\s*hours?|24\s*ساعة|24\s*ساعه|around.the.clock|round.the.clock|non.stop|continuous coverage|على مدار الساعة|تغطية مستمرة|طوال اليوم|طول اليوم/i;
 
-  return history.slice(-16)
-    .filter(x =>
-      x &&
-      ["user", "assistant"].includes(x.role) &&
-      typeof x.content === "string"
-    )
-    .map(x => ({
-      role: x.role,
-      content: x.content.slice(0, 2000)
-    }));
-}
+const reConcurrent =
+  /simultaneous|concurrent|at\s+the\s+same\s+time|at\s+all\s+times|always\s+online|online\s+at\s+once|per\s+shift|each\s+shift|بنفس\s+الوقت|بنفس\s+اللحظة|أونلاين|اونلاين|متواجدين|في\s+نفس\s+الوقت|متصلين\s+دائماً/i;
 
-function detectRoleCounts(message) {
-  const source = normalize(message);
-  const candidates = [];
+const reTotal =
+  /in\s+total|total\s+agents|total\s+team|overall\s+headcount|إجمالي|بالمجموع|العدد\s+الكلي/i;
 
-  for (const role of ROLES) {
-    const p = role.pattern;
+const reAdvice =
+  /recommend|suggest|team\s*structure|staffing\s*structure|supervision|which\s*roles|هيكل|تنصح|توصي|اقتراح|مشرف|توزيع\s*الفريق/i;
 
-    const expressions = [
-      new RegExp(
-        "(?<![\\p{L}\\p{N}])(\\d{1,5})\\s*(?:x|×)?\\s*(?:" +
-        p + ")(?![\\p{L}])",
-        "giu"
-      ),
-      new RegExp(
-        "(?<![\\p{L}\\p{N}])(?:" + p +
-        ")\\s*(?:x|×|:|=)?\\s*(\\d{1,5})(?!\\d)",
-        "giu"
-      )
-    ];
+const rePrice =
+  /pric|cost|quote|quotation|estimate|how\s*much|monthly|budget|سعر|أسعار|اسعار|تكلف|قديش|بكم|شهري|عرض\s*سعر|التسعير/i;
 
-    for (const expression of expressions) {
-      for (const match of source.matchAll(expression)) {
-        const count = Number(match[1]);
+const reShrink =
+  /shrinkage|shrink|relief\s*staff|backup\s*staff|staffing\s*buffer|احتياط|الغياب|الإجازات|الاجازات|شرنكج|شرينكج|شرنك/i;
 
-        if (validCount(count)) {
-          candidates.push({
-            key: role.key,
-            count,
-            start: match.index,
-            end: match.index + match[0].length,
-            length: match[0].length
-          });
-        }
-      }
-    }
-  }
+const reDay =
+  /day\s*shift|daytime|day\s*only|نهاري|شفت\s*نهار|دوام\s*نهار/i;
 
-  candidates.sort((a, b) => {
-    if (a.key === "agent" && b.key !== "agent") return 1;
-    if (b.key === "agent" && a.key !== "agent") return -1;
-    return b.length - a.length;
-  });
+const reNight =
+  /night\s*shift|nighttime|night\s*only|ليلي|شفت\s*ليل|دوام\s*ليل/i;
 
-  const selected = [];
+const reHours =
+  /\b\d{1,2}\s*(?:hours?|hrs?)\s*(?:per\s*day|a\s*day|daily)|\b\d{1,2}\s*ساعات?\s*(?:يومياً|باليوم)/i;
 
-  for (const candidate of candidates) {
-    const overlaps = selected.some(existing =>
-      candidate.start < existing.end &&
-      existing.start < candidate.end
-    );
+const roleRegex = [
+  [
+    "nightAgent",
+    /(?:night\s*(?:shift\s*)?agents?|agents?\s*(?:on\s*)?night\s*shift|موظف(?:ين|ون)?\s*ليلي)/i
+  ],
+  [
+    "seniorAgent",
+    /(?:senior\s*agents?|موظف(?:ين|ون)?\s*أقدم)/i
+  ],
+  [
+    "teamLeader",
+    /(?:team\s*leaders?|\bTLs?\b|مشرف(?:ين|ون)?|قائد\s*فريق)/i
+  ],
+  [
+    "groupLeader",
+    /(?:group\s*leaders?|\bGLs?\b|قائد\s*مجموعة)/i
+  ],
+  [
+    "qaAnalyst",
+    /(?:\bQA\b|quality\s*analysts?|مراقب\s*جودة)/i
+  ],
+  [
+    "operationsManager",
+    /(?:operations\s*managers?|\bOMs?\b|مدير\s*عمليات)/i
+  ],
+  [
+    "agent",
+    /(?:standard\s*agents?|support\s*agents?|customer\s*(?:service|support)\s*agents?|\bagents?\b|موظف(?:ين|ون)?)/i
+  ]
+];
 
-    if (!overlaps) selected.push(candidate);
-  }
+function headcount(t) {
+  const s = norm(t);
 
-  const counts = {};
-
-  for (const item of selected) {
-    if (
-      counts[item.key] !== undefined &&
-      counts[item.key] !== item.count
-    ) {
-      return { ambiguous: true };
-    }
-
-    counts[item.key] = item.count;
-  }
-
-  return {
-    counts,
-    ambiguous: false
-  };
-}
-
-function hasRoles(counts) {
-  return Object.values(counts || {}).some(validCount);
-}
-
-function findLatestTeam(history, message = "") {
-  const inputs = [
-    message,
-    ...history
-      .filter(x => x.role === "user")
-      .map(x => x.content)
-      .reverse()
+  const patterns = [
+    /(\d{1,4})\s*(?:agents?|employees|staff|seats?|positions?|موظف(?:ين|ون)?|مقاعد?)/i,
+    /(?:agents?|employees|staff|seats?|positions?|موظف(?:ين|ون)?|مقاعد?)\s*(?:x|:|=|of)?\s*(\d{1,4})/i,
+    /(?:need|require|want|looking for|أحتاج|نحتاج|أريد|نريد)\s*(\d{1,4})/i,
+    /^(\d{1,4})$/
   ];
 
-  for (const input of inputs) {
-    const parsed = detectRoleCounts(input);
+  for (const p of patterns) {
+    const m = s.match(p);
 
-    if (parsed.ambiguous) {
-      return { ambiguous: true };
-    }
-
-    if (hasRoles(parsed.counts)) {
-      return {
-        counts: parsed.counts,
-        source: input
-      };
+    if (m && good(Number(m[1]))) {
+      return Number(m[1]);
     }
   }
 
   return null;
 }
 
-function calculate(counts) {
+function parseRoles(t) {
+  const s = norm(t);
+  const hits = [];
+
+  for (const [key, p] of roleRegex) {
+    const patterns = [
+      new RegExp(
+        "(\\d{1,4})\\s*(?:x|×)?\\s*(?:" +
+        p.source + ")",
+        "giu"
+      ),
+      new RegExp(
+        "(?:" + p.source +
+        ")\\s*(?:x|×|:|=|of)?\\s*(\\d{1,4})",
+        "giu"
+      )
+    ];
+
+    for (const r of patterns) {
+      for (const m of s.matchAll(r)) {
+        const n = Number(m[1]);
+
+        if (good(n)) {
+          hits.push({
+            key,
+            n,
+            start: m.index,
+            end: m.index + m[0].length,
+            length: m[0].length
+          });
+        }
+      }
+    }
+  }
+
+  hits.sort((a, b) =>
+    Number(a.key === "agent") -
+    Number(b.key === "agent") ||
+    b.length - a.length
+  );
+
+  const selected = [];
+
+  for (const hit of hits) {
+    if (!selected.some(x =>
+      hit.start < x.end &&
+      x.start < hit.end
+    )) {
+      selected.push(hit);
+    }
+  }
+
+  const counts = {};
+
+  for (const hit of selected) {
+    if (
+      counts[hit.key] !== undefined &&
+      counts[hit.key] !== hit.n
+    ) {
+      return {
+        ambiguous: true,
+        counts: {}
+      };
+    }
+
+    counts[hit.key] = hit.n;
+  }
+
+  return {
+    ambiguous: false,
+    counts
+  };
+}
+
+function scopeOf(t) {
+  const s = norm(t);
+  const n = headcount(s);
+  const parsed = parseRoles(s);
+
+  if (re247.test(s)) {
+    return {
+      kind: "247",
+      n,
+      mode: reConcurrent.test(s)
+        ? "concurrent"
+        : reTotal.test(s)
+          ? "total"
+          : null
+    };
+  }
+
+  if (reDay.test(s) || reNight.test(s)) {
+    const shift =
+      reNight.test(s) && !reDay.test(s)
+        ? "night"
+        : "day";
+
+    const counts = { ...parsed.counts };
+
+    if (
+      n &&
+      !counts.agent &&
+      !counts.nightAgent
+    ) {
+      counts[
+        shift === "night"
+          ? "nightAgent"
+          : "agent"
+      ] = n;
+    }
+
+    if (
+      shift === "night" &&
+      counts.agent &&
+      !counts.nightAgent
+    ) {
+      counts.nightAgent = counts.agent;
+      delete counts.agent;
+    }
+
+    return {
+      kind: "shift",
+      shift,
+      n: n || counts.agent || counts.nightAgent,
+      counts,
+      ambiguous: parsed.ambiguous
+    };
+  }
+
+  if (Object.keys(parsed.counts).length) {
+    return {
+      kind: "roles",
+      counts: parsed.counts,
+      ambiguous: parsed.ambiguous
+    };
+  }
+
+  if (
+    n &&
+    /\b(?:need|want|require|team|staff|employees|agents)\b|أحتاج|نحتاج|موظف/.test(s)
+  ) {
+    return {
+      kind: "roles",
+      counts: { agent: n },
+      ambiguous: false
+    };
+  }
+
+  return null;
+}
+
+function latestScope(h, m = "") {
+  const u = h
+    .filter(x => x.role === "user")
+    .map(x => x.content);
+
+  if (m) u.push(m);
+
+  for (let i = u.length - 1; i >= 0; i--) {
+    const s = scopeOf(u[i]);
+    if (s) return s;
+  }
+
+  return null;
+}
+
+function resolve247(m, h) {
+  const current = scopeOf(m);
+
+  const users = h
+    .filter(x => x.role === "user")
+    .map(x => x.content);
+
+  const prev = [...users]
+    .reverse()
+    .map(scopeOf)
+    .find(x => x?.kind === "247");
+
+  const prevN = [...users]
+    .reverse()
+    .map(headcount)
+    .find(good);
+
+  if (current?.kind === "247") {
+    return {
+      ...current,
+      n: current.n || prev?.n || prevN || null,
+      mode: current.mode || prev?.mode || null
+    };
+  }
+
+  const s = norm(m);
+
+  const mode =
+    reConcurrent.test(s) && !reTotal.test(s)
+      ? "concurrent"
+      : reTotal.test(s) && !reConcurrent.test(s)
+        ? "total"
+        : null;
+
+  if (prev && mode) {
+    return {
+      ...prev,
+      mode,
+      n: headcount(s) || prev.n || prevN || null
+    };
+  }
+
+  if (
+    prev &&
+    /^(?:yes|correct|exactly|نعم|اي|أيوه|صح|بالضبط)[.!\s]*$/i.test(s)
+  ) {
+    return prev;
+  }
+
+  return null;
+}
+
+function quote(c) {
   let total = 0;
   const lines = [];
 
-  for (const role of ROLES) {
-    const count = counts[role.key];
+  for (const [key, rate] of Object.entries(RATES)) {
+    if (good(c?.[key])) {
+      const amount = c[key] * rate;
+      total += amount;
 
-    if (!validCount(count)) continue;
-
-    const subtotal = count * RATES[role.key];
-    total += subtotal;
-
-    lines.push({
-      role: role.name,
-      count,
-      rate: RATES[role.key],
-      subtotal
-    });
+      lines.push(
+        `${c[key]} × ${NAMES[key]} × ` +
+        `${usd(rate)} = ${usd(amount)}`
+      );
+    }
   }
 
-  return { lines, total };
+  return { total, lines };
 }
 
-function formatLines(lines) {
-  return lines.map(line =>
-    `${line.count} × ${line.role} × ` +
-    `${money(line.rate)} = ${money(line.subtotal)}`
-  ).join("\n");
+function shrinkFactor(t) {
+  const m = norm(t).match(
+    /(?:shrinkage|shrink|شرنكج|شرينكج|شرنك)\s*(?:of|at|:|=)?\s*(\d{1,2}(?:\.\d+)?)\s*%|(\d{1,2}(?:\.\d+)?)\s*%\s*(?:shrinkage|shrink|شرنكج|شرينكج|شرنك)/i
+  );
+
+  if (!m) return SHRINKAGE;
+
+  const v = Number(m[1] || m[2]) / 100;
+
+  return v >= 0 && v <= 0.5
+    ? v
+    : SHRINKAGE;
 }
 
-function asksPricing(text) {
-  return /price|pricing|cost|quote|quotation|how much|estimate|monthly|سعر|أسعار|اسعار|تكلف|قديش|بكم|شهري|عرض سعر/i.test(text);
+function coveragePlan(seats, factor = SHRINKAGE) {
+  const productive = 40 * (1 - factor);
+
+  const day = Math.ceil(
+    seats * 112 / productive
+  );
+
+  const night = Math.ceil(
+    seats * 56 / productive
+  );
+
+  return {
+    seats,
+    day,
+    night,
+    total: day + night,
+    cost:
+      day * RATES.agent +
+      night * RATES.nightAgent,
+    hours: seats * 168,
+    theoretical: seats * 168 / 40
+  };
 }
 
-function asksRecommendation(text) {
-  return /recommend|suggest|team structure|staffing structure|supervision|هيكل|تنصح|توصي|اقتراح|مشرف|توزيع الفريق/i.test(text);
+function coverageAnswer(
+  scope,
+  ar,
+  factor = SHRINKAGE
+) {
+  if (!scope?.n) {
+    return ar
+      ? "كم موظفاً تحتاج أن يكون متصلاً في الوقت نفسه لتغطية 24/7؟"
+      : "How many agents must be online simultaneously for 24/7 coverage?";
+  }
+
+  if (!scope.mode) {
+    return ar
+      ? `هل تقصد ${scope.n} موظفين إجمالاً، أم ${scope.n} موظفين متواجدين في الوقت نفسه على مدار الساعة؟`
+      : `Do you mean ${scope.n} employees in total, or ${scope.n} agents online simultaneously 24/7?`;
+  }
+
+  if (scope.mode === "total") {
+    return ar
+      ? `إذا كان العدد الإجمالي ${scope.n} موظفين، فكم موظفاً تحتاج متواجداً في الوقت نفسه؟`
+      : `With ${scope.n} employees in total, how many need to be online simultaneously?`;
+  }
+
+  const p = coveragePlan(scope.n, factor);
+  const pct = Math.round(factor * 100);
+
+  if (ar) {
+    return `تقدير تغطية 24/7 لـ ${scope.n} موظفين متواجدين بالتزامن:
+
+• ساعات التغطية أسبوعياً: ${p.hours}
+• ${p.day} موظفاً نهارياً × $900 = ${usd(p.day * 900)}
+• ${p.night} موظفاً ليلياً × $1,050 = ${usd(p.night * 1050)}
+• إجمالي الفريق: ${p.total} FTE
+• التكلفة الشهرية: ${usd(p.cost)}
+
+الافتراضات: 40 ساعة مدفوعة أسبوعياً لكل FTE، و${pct}% للغياب والإجازات، و16 ساعة نهارية و8 ليلية يومياً.
+
+تقدير مبدئي يخضع لمراجعة جدول المناوبات. لا يشمل الإدارة أو QA تلقائياً.
+
+هل ترغب بعرض سعر مبدئي؟`;
+  }
+
+  return `24/7 estimate for ${scope.n} agents online simultaneously:
+
+• Weekly coverage: ${p.hours} hours
+• ${p.day} Day Shift FTE × $900 = ${usd(p.day * 900)}
+• ${p.night} Night Shift FTE × $1,050 = ${usd(p.night * 1050)}
+• Estimated team: ${p.total} FTE
+• Monthly estimate: ${usd(p.cost)}
+
+Assumptions: 40 paid hours/FTE/week, ${pct}% shrinkage, 16 daytime and 8 nighttime hours/day.
+
+Subject to roster validation. Management and QA are not automatically included.
+
+Would you like a preliminary proposal?`;
 }
 
-function asksCoverage(text) {
-  return /24\s*\/\s*7|24\s*hours|around.the.clock|simultaneous|concurrent|على مدار الساعة|بنفس الوقت|طوال اليوم/i.test(normalize(text));
-}
+function structure(n, ar) {
+  if (!good(n)) {
+    return ar
+      ? "كم عدد موظفي الدعم المطلوب حتى أقترح هيكل الفريق؟"
+      : "How many support agents do you need for a team structure recommendation?";
+  }
 
-function recommendationText(n, ar) {
-  const parts = [];
+  const lines = [
+    ar
+      ? `هيكل مبدئي لفريق من ${n} موظفين:`
+      : `Suggested structure for ${n} agents:`,
+    `• Support Agents: ${n}`
+  ];
 
   if (n < 10) {
-    parts.push(ar
-      ? "ممكن نستخدم Senior Agent أو إشراف مشترك."
-      : "A Senior Agent or shared supervision may be suitable.");
+    lines.push(
+      ar
+        ? "• Senior Agent / Player-Coach: خيار للإشراف على فريق صغير."
+        : "• Senior Agent / Player-Coach: optional for a small team."
+    );
   } else {
-    const tls = Math.ceil(n / 10);
-
-    parts.push(ar
-      ? `منقترح مبدئياً ${tls} Team Leader، بمعدل مشرف لكل 10 Agents تقريباً.`
-      : `We initially recommend ${tls} Team Leader(s), approximately one per 10 agents.`);
+    lines.push(
+      `• Team Leaders: ${Math.ceil(n / 10)}`
+    );
   }
 
   if (n >= 20) {
-    parts.push(ar
-      ? "منراجع الحاجة لـQA مخصص أو مشترك."
-      : "We would review dedicated versus shared QA coverage.");
+    lines.push(
+      ar
+        ? "• QA Analyst: حسب حجم المراجعات."
+        : "• QA Analyst: depending on review volume."
+    );
+  }
+
+  if (n >= 30) {
+    lines.push(
+      ar
+        ? "• Group Leader: حسب عدد الفرق."
+        : "• Group Leader: depending on team structure."
+    );
   }
 
   if (n >= 40) {
-    parts.push(ar
-      ? "منقيّم الحاجة لـWFM وإدارة تشغيلية إضافية حسب تعقيد المشروع."
-      : "We would assess WFM and additional management based on operational complexity.");
+    lines.push(
+      ar
+        ? "• Operations Manager: حسب تعقيد التشغيل."
+        : "• Operations Manager: depending on complexity."
+    );
   }
 
-  parts.push(ar
-    ? "هاي توصيات اختيارية، وما منضيف أي دور على السعر بدون موافقتك."
-    : "These recommendations are optional. No role is added without your approval.");
-
-  return parts.join("\n");
-}
-
-function pricingReply(message, history) {
-  const ar = isArabic(message);
-  const parsed = detectRoleCounts(message);
-
-  if (parsed.ambiguous) {
-    return ar
-      ? "ممكن تأكدلي العدد النهائي لكل وظيفة؟"
-      : "Could you confirm the final count for each role?";
-  }
-
-  if (!hasRoles(parsed.counts)) return null;
-
-  const genericHeadcount =
-    /\b(?:employees|staff|people|headcount)\b|موظف(?:ين|ون)?/i.test(message);
-
-  const hasSpecificRole =
-    /\b(?:agents?|team leaders?|TLs?|QA|senior|night)\b|دعم عملاء|مشرف/i.test(message);
-
-  if (
-    genericHeadcount &&
-    !hasSpecificRole &&
-    Object.keys(parsed.counts).length > 0
-  ) {
-    return ar
-      ? "هل العدد المذكور هو عدد موظفي دعم العملاء فقط، أم العدد الإجمالي للفريق؟"
-      : "Is that the number of support agents only, or the total team headcount?";
-  }
-
-  const result = calculate(parsed.counts);
-
-  if (!result.lines.length) return null;
-
-  let reply = ar
-    ? `التكلفة الشهرية للأدوار المطلوبة:\n\n${formatLines(result.lines)}\n\nالمجموع: ${money(result.total)} شهرياً.`
-    : `Monthly cost for your requested roles:\n\n${formatLines(result.lines)}\n\nTotal: ${money(result.total)}/month.`;
-
-  if (parsed.counts.agent && parsed.counts.agent < 5) {
-    reply += ar
-      ? "\n\nملاحظة: الحد الأدنى القياسي لفريق دعم العملاء هو 5 Agents. منقدر نناقش احتياجك لفريق أصغر بشكل منفصل."
-      : "\n\nNote: Our standard minimum customer support team is 5 agents. Smaller requirements can be discussed separately.";
-  }
-
-  reply += ar
-    ? "\n\nما أضفنا أي أدوار غير مطلوبة. أي تكاليف مرتبطة بمتطلبات خاصة منوضحها قبل الاتفاق. بدون رسوم مخفية."
-    : "\n\nNo unrequested roles were added. Any project-specific costs are disclosed before agreement. No hidden fees.";
-
-  if (asksRecommendation(message) && parsed.counts.agent) {
-    reply += "\n\n" +
-      recommendationText(parsed.counts.agent, ar);
-  } else {
-    reply += ar
-      ? "\n\nبتحب نجهزلك Preliminary Proposal؟"
-      : "\n\nWould you like a personalized preliminary proposal?";
-  }
-
-  return reply;
-}
-
-function recommendationReply(message, history) {
-  const ar = isArabic(message);
-  const team = findLatestTeam(history, message);
-  const n = team?.counts?.agent;
-
-  if (!validCount(n)) {
-    return ar
-      ? "كم Agent بدك يكون بالفريق حتى أقترح هيكل مناسب؟"
-      : "How many support agents will your team have?";
-  }
-
-  return (ar
-    ? `لفريق من ${n} Agents:\n\n`
-    : `For a team of ${n} agents:\n\n`) +
-    recommendationText(n, ar);
-}
-
-function coverageReply(message) {
-  const ar = isArabic(message);
-  const s = normalize(message);
-  const match = s.match(
-    /(\d{1,4})\s*(?:agents?|employees|staff|موظف(?:ين|ون)?)/i
+  lines.push(
+    ar
+      ? "هذه توصيات اختيارية ولا تُضاف تكلفتها دون موافقتك."
+      : "These are optional recommendations, never automatic charges."
   );
 
-  if (!match) return null;
-
-  const n = Number(match[1]);
-
-  if (!validCount(n)) return null;
-
-  const simultaneous =
-    /simultaneous|concurrent|online at the same time|at the same time|بنفس الوقت|بنفس اللحظة|متواجدين/i.test(s);
-
-  const total =
-    /in total|total employees|total agents|إجمال|بالمجموع/i.test(s);
-
-  if (!simultaneous && !total) {
-    return ar
-      ? `هل تقصد ${n} موظفين إجمالاً، أو ${n} موظفين متواجدين بنفس الوقت طوال 24/7؟`
-      : `Do you mean ${n} agents in total, or ${n} agents online simultaneously 24/7?`;
-  }
-
-  if (total && !simultaneous) {
-    return ar
-      ? "كم موظف لازم يكون متواجد بنفس الوقت بكل شفت؟"
-      : "How many agents must be online simultaneously per shift?";
-  }
-
-  const hours = n * 168;
-  const theoretical = hours / 40;
-  const low = Math.ceil(theoretical / 0.85);
-  const high = Math.ceil(theoretical / 0.70);
-
-  const estimate =
-    `${n} × 24 × 7 = ${hours}\n` +
-    `${hours} ÷ 40 = ${theoretical.toFixed(1)} FTE`;
-
-  return ar
-    ? `لتأمين ${n} موظفين بنفس الوقت طوال 24/7:\n\n${estimate}\n\nبعد احتساب الإجازات والاستراحات والغياب والتدريب، منخطط مبدئياً لحوالي ${low}–${high} موظف.\n\nالسعر المرجعي على تعرفة النهار: ${money(low * 900)}–${money(high * 900)} شهرياً. هاد مو السعر النهائي لتغطية 24/7، لأن الشفت الليلي والمتطلبات الإضافية لازم تنحسب بشكل منفصل.`
-    : `For ${n} agents online simultaneously 24/7:\n\n${estimate}\n\nAllowing for breaks, leave, absences and training, initial planning is approximately ${low}–${high} FTE.\n\nReference staffing cost at daytime rates: ${money(low * 900)}–${money(high * 900)}/month. This is not a complete 24/7 quote; night-shift and other requirements must be scoped separately.`;
+  return lines.join("\n");
 }
 
-function proposalReply(proposal, history) {
-  const company = String(proposal.company || "").trim();
-  const email = String(proposal.email || "").trim();
-
-  if (
-    !proposal.consent ||
-    company.length < 2 ||
-    company.length > 120 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-    email.length > 254
-  ) {
-    return {
-      reply: "Please provide a valid company name, business email and consent.",
-      proposalReady: false
-    };
+function baseAnswer(scope, ar) {
+  if (scope?.ambiguous) {
+    return ar
+      ? "يرجى تأكيد العدد المطلوب لكل دور."
+      : "Please confirm the quantity for each role.";
   }
 
-  const team = findLatestTeam(history);
+  const q = quote(scope?.counts || {});
 
-  if (!team || team.ambiguous || !hasRoles(team.counts)) {
-    return {
-      reply: "To prepare your preliminary proposal, please tell me the number of agents and any additional roles you need first.",
-      proposalReady: false
-    };
+  if (!q.lines.length) {
+    return ar
+      ? "كم موظفاً تحتاج؟ يمكنني حساب التكلفة الشهرية."
+      : "How many agents do you need? I can calculate the monthly cost.";
   }
 
-  if (
-    team.counts.agent &&
-    team.counts.agent < 5
-  ) {
-    return {
-      reply: "Our standard minimum customer support team is 5 agents. Please confirm whether you would like a proposal for 5 agents, or contact our team to discuss a smaller setup.",
-      proposalReady: false
-    };
+  if (ar) {
+    return `تقدير التكلفة الشهرية:
+
+${q.lines.join("\n")}
+
+الإجمالي: ${usd(q.total)} شهرياً.
+
+لا رسوم مخفية أو خصومات تلقائية، ولا تُضاف الإدارة أو التغطية الاحتياطية تلقائياً.
+
+تغطية 24/7 تحتاج حساباً منفصلاً.
+
+هل ترغب بعرض مبدئي؟`;
   }
 
-  const result = calculate(team.counts);
+  return `Monthly estimate:
 
-  const requiresCoverageReview =
-    history.some(x =>
-      x.role === "user" &&
-      asksCoverage(x.content)
+${q.lines.join("\n")}
+
+Total: ${usd(q.total)}/month.
+
+No hidden fees or automatic volume discounts.
+
+Relief staffing and management are not automatically included.
+
+24/7 coverage needs a separate calculation.
+
+Would you like a preliminary proposal?`;
+}
+
+function shrinkAnswer(scope, m) {
+  const ar = isAr(m);
+  const factor = shrinkFactor(m);
+  const pct = Math.round(factor * 100);
+
+  if (!scope) {
+    return ar
+      ? "كم موظفاً تريد احتساب تغطية الإجازات والغياب لهم؟"
+      : "How many agents need relief coverage?";
+  }
+
+  if (scope.kind === "247") {
+    return coverageAnswer(scope, ar, factor);
+  }
+
+  const c = scope.counts || {};
+  const base = quote(c);
+
+  let total = base.total;
+  const lines = [];
+
+  for (const key of ["agent", "nightAgent"]) {
+    if (!good(c[key])) continue;
+
+    const staffed = Math.ceil(
+      c[key] / (1 - factor)
     );
 
-  const coverageNote = requiresCoverageReview
-    ? "24/7 coverage or shift requirements mentioned in the conversation require separate staffing and premium validation."
-    : "Coverage hours and shift arrangements are subject to confirmation.";
+    const extra = staffed - c[key];
 
-  const reply =
-`SCALEBRIDGE SOLUTIONS
-PRELIMINARY PROPOSAL
+    total += extra * RATES[key];
+
+    lines.push(
+      `${NAMES[key]}: ${c[key]} → ` +
+      `${staffed} FTE (+${extra})`
+    );
+  }
+
+  if (!lines.length) {
+    return ar
+      ? "كم موظف دعم تريد احتساب التغطية الاحتياطية لهم؟"
+      : "How many support agents need relief coverage?";
+  }
+
+  if (ar) {
+    return `التكلفة الأساسية: ${usd(base.total)}/شهر
+
+مع ${pct}% Shrinkage:
+
+${lines.join("\n")}
+
+الإجمالي التقديري: ${usd(total)}/شهر
+
+الفرق ${usd(total - base.total)} تكلفة موظفين إضافيين، وليس رسماً مستقلاً.
+
+يلزم تأكيد المناوبات.`;
+  }
+
+  return `Base cost: ${usd(base.total)}/month
+
+With ${pct}% shrinkage:
+
+${lines.join("\n")}
+
+Estimated total: ${usd(total)}/month
+
+Difference ${usd(total - base.total)} is additional staffing, not a separate fee.
+
+Shifts require confirmation.`;
+}
+
+function resolveProposalScope(h) {
+  const users = h
+    .filter(x => x.role === "user")
+    .map(x => x.content);
+
+  let scope = null;
+
+  for (const m of users) {
+    const current = scopeOf(m);
+
+    if (current?.kind === "247") {
+      scope = {
+        ...current,
+        n: current.n || scope?.n || null,
+        mode:
+          current.mode ||
+          (scope?.kind === "247"
+            ? scope.mode
+            : null)
+      };
+    } else if (current) {
+      scope = current;
+    } else if (scope?.kind === "247") {
+      if (
+        reConcurrent.test(m) &&
+        !reTotal.test(m)
+      ) {
+        scope = {
+          ...scope,
+          mode: "concurrent",
+          n: headcount(m) || scope.n
+        };
+      } else if (
+        reTotal.test(m) &&
+        !reConcurrent.test(m)
+      ) {
+        scope = {
+          ...scope,
+          mode: "total",
+          n: headcount(m) || scope.n
+        };
+      }
+    }
+  }
+
+  return scope;
+}
+
+function proposal(data, history) {
+  const company = safe(data?.company);
+  const email = safe(data?.email, 254);
+
+  if (
+    !data?.consent ||
+    company.length < 2 ||
+    !emailOK(email)
+  ) {
+    return {
+      reply:
+        "Please provide a valid company name, business email and consent.",
+      proposalReady: false
+    };
+  }
+
+  const scope = resolveProposalScope(history);
+
+  let details =
+    "Scope to be confirmed with the client.";
+
+  let amount = null;
+  let requiresReview = true;
+
+  if (
+    scope?.kind === "247" &&
+    scope.n &&
+    scope.mode === "concurrent"
+  ) {
+    const p = coveragePlan(scope.n);
+
+    details =
+      `24/7: ${scope.n} agents online simultaneously.\n` +
+      `${p.day} Day Shift FTE × $900 = ${usd(p.day * 900)}\n` +
+      `${p.night} Night Shift FTE × $1,050 = ${usd(p.night * 1050)}\n` +
+      `Estimated ${p.total} FTE; 25% shrinkage, ` +
+      `40 paid hours/week. Management and QA excluded.`;
+
+    amount = p.cost;
+    requiresReview = false;
+
+  } else if (scope?.kind === "247") {
+    details =
+      `24/7 inquiry: ${scope.n || "unspecified"} agents; ` +
+      `simultaneous coverage versus total headcount ` +
+      `requires confirmation.`;
+
+  } else if (scope && !scope.ambiguous) {
+    const q = quote(scope.counts);
+
+    if (q.lines.length) {
+      details =
+        q.lines.join("\n") +
+        "\nBase headcount only. Relief staffing " +
+        "and management excluded.";
+
+      amount = q.total;
+      requiresReview = false;
+    }
+
+  } else if (scope?.ambiguous) {
+    details =
+      "Role quantities require clarification.";
+  }
+
+  const text = `SCALEBRIDGE SOLUTIONS
+PRELIMINARY PROPOSAL / INQUIRY
 
 Prepared for: ${company}
 Business email: ${email}
 
-SERVICE
-Managed Customer Support
+${details}
 
-PROPOSED TEAM
-${formatLines(result.lines)}
+${amount === null
+  ? "PRICE: Custom quote pending scope confirmation."
+  : `ESTIMATED MONTHLY TOTAL: ${usd(amount)} USD`}
 
-MONTHLY BASE TOTAL
-${money(result.total)} USD/month
+${requiresReview
+  ? "STATUS: Scope review required. This is not a priced offer."
+  : "STATUS: Preliminary, nonbinding estimate."}
 
-PRICING TRANSPARENCY
-This preliminary proposal uses ScaleBridge's published monthly rates for the selected roles.
+No automatic volume discounts or unrequested roles.
 
-Our standard agent rate is $900 per FTE/month, regardless of team size.
-
-No unrequested roles have been added.
-
-SCOPE CONFIRMATION
-${coverageNote}
-
-The final commercial proposal will be issued by the ScaleBridge team after confirming service scope, channels, languages, coverage, software and any additional project-specific requirements.
-
-All additional costs will be disclosed and agreed in writing before commitment.
+Operating hours, coverage, SLAs, software,
+taxes, integrations and optional costs
+require written confirmation.
 
 Transparent Pricing. No Hidden Fees.
 
-NEXT STEP
-Contact info@scalebridgesolutions.de to request your final commercial proposal.
-
-This is a preliminary estimate, not a binding contractual offer.`;
+Contact: ${EMAIL}`;
 
   return {
-    reply,
+    reply: text,
+    proposalText: text,
     proposalReady: true,
-    proposalText: reply
+    requiresReview
   };
 }
 
+async function notify(
+  env,
+  subject,
+  body,
+  replyTo
+) {
+  if (
+    !env.RESEND_API_KEY ||
+    !env.NOTIFY_FROM_EMAIL
+  ) {
+    return false;
+  }
 
-// Email delivery uses a server-side secret. Never place RESEND_API_KEY in website JavaScript.
-async function notifyOwner(env, subject, content) {
-  if (!env.RESEND_API_KEY || !env.NOTIFY_FROM_EMAIL) {
-    return {sent:false, reason:'Email delivery is not configured'};
+  const payload = {
+    from: env.NOTIFY_FROM_EMAIL,
+    to: [EMAIL],
+    subject: subject.slice(0, 180),
+    text: body.slice(0, 15000)
+  };
+
+  if (emailOK(replyTo)) {
+    payload.reply_to = replyTo;
   }
-  const response = await fetch('https://api.resend.com/emails', {
-    method:'POST',
-    headers:{'Authorization':'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      from:env.NOTIFY_FROM_EMAIL,
-      to:['info@scalebridgesolutions.de'],
-      subject:subject.slice(0,180),
-      text:content.slice(0,15000)
-    })
-  });
-  if (!response.ok) {
-    console.error('Owner notification failed',response.status);
-    return {sent:false,reason:'Email provider rejected the request'};
+
+  try {
+    const r = await fetch(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          Authorization:
+            "Bearer " + env.RESEND_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    if (!r.ok) {
+      console.error(
+        "Resend status",
+        r.status
+      );
+    }
+
+    return r.ok;
+
+  } catch (e) {
+    console.error(
+      "Resend delivery error",
+      String(e)
+    );
+
+    return false;
   }
-  return {sent:true};
 }
-function validEmail(v) {return typeof v==='string' && v.length<=254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
-function safeField(v,max=120) {return typeof v==='string' ? v.trim().slice(0,max).replace(/[\u0000-\u001f]/g,' ') : '';}
-async function meetingReply(meeting,env) {
-  const name=safeField(meeting.name), company=safeField(meeting.company), email=safeField(meeting.email,254);
-  const tz=safeField(meeting.timezone,80), slots=meeting.slots;
-  if (meeting.website || !meeting.consent || name.length<2 || company.length<2 || !validEmail(email) ||
-      !Array.isArray(slots) || slots.length!==3 || !Intl.supportedValuesOf('timeZone').includes(tz)) {
-    return {reply:'Please enter your details and three valid meeting times.',requestReceived:false};
+
+async function meeting(m, env) {
+  const name = safe(m?.name);
+  const company = safe(m?.company);
+  const email = safe(m?.email, 254);
+  const tz = safe(m?.timezone, 80);
+
+  let validZone = false;
+
+  try {
+    new Intl.DateTimeFormat(
+      "en-GB",
+      { timeZone: tz }
+    );
+
+    validZone = true;
+  } catch {}
+
+  if (
+    m?.website ||
+    !m?.consent ||
+    name.length < 2 ||
+    company.length < 2 ||
+    !emailOK(email) ||
+    !Array.isArray(m?.slots) ||
+    m.slots.length !== 3 ||
+    !validZone
+  ) {
+    return {
+      reply:
+        "Please enter your details and three valid meeting times.",
+      requestReceived: false
+    };
   }
-  const parsed=slots.map(s=>typeof s==='string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(s) ? Date.parse(s) : NaN);
-  const now=Date.now();
-  if (parsed.some(t=>!Number.isFinite(t)||t<now+72*3600*1000||t>now+120*86400*1000) || new Set(parsed).size!==3) {
-    return {reply:'Please choose three different future times, at least 72 hours from now (within 120 days).',requestReceived:false};
+
+  const times = m.slots.map(s =>
+    typeof s === "string" &&
+    /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(s)
+      ? Date.parse(s)
+      : NaN
+  );
+
+  const now = Date.now();
+
+  if (
+    times.some(t =>
+      !Number.isFinite(t) ||
+      t < now + 72 * 3600000 ||
+      t > now + 120 * 86400000
+    ) ||
+    new Set(times).size !== 3
+  ) {
+    return {
+      reply:
+        "Choose three different times at least 72 hours ahead, within 120 days.",
+      requestReceived: false
+    };
   }
-  const germany=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',dateStyle:'full',timeStyle:'short'});
-  const customer=new Intl.DateTimeFormat('en-GB',{timeZone:tz,dateStyle:'full',timeStyle:'short'});
-  const lines=parsed.map((t,i)=>`${i+1}. ${customer.format(t)} (${tz}) | Germany: ${germany.format(t)} | UTC: ${new Date(t).toISOString()}`);
-  const body=`New meeting request - pending your confirmation\n\nName: ${name}\nCompany: ${company}\nEmail: ${email}\n\nPreferred times:\n${lines.join('\n')}\n\nThis is NOT a confirmed booking. Reply to the client with the confirmed time and Google Meet link.`;
-  const sent=await notifyOwner(env,'ScaleBridge | Meeting request | '+company,body);
-  return sent.sent ? {reply:'Thank you! We received your three preferred meeting times. Our team will review them and confirm one option by email. No meeting is booked yet.',requestReceived:true} :
-    {reply:'Your request could not be delivered automatically. Please email info@scalebridgesolutions.de with your three preferred times.',requestReceived:false};
+
+  const fmt = zone =>
+    new Intl.DateTimeFormat(
+      "en-GB",
+      {
+        timeZone: zone,
+        dateStyle: "full",
+        timeStyle: "short"
+      }
+    );
+
+  const local = fmt(tz);
+  const germany = fmt("Europe/Berlin");
+
+  const slots = times.map((t, i) =>
+    `${i + 1}. ${local.format(t)} (${tz}) | ` +
+    `Germany: ${germany.format(t)} | ` +
+    `UTC: ${new Date(t).toISOString()}`
+  );
+
+  const body = `NEW MEETING REQUEST — NOT CONFIRMED
+
+Name: ${name}
+Company: ${company}
+Email: ${email}
+
+Preferred times:
+${slots.join("\n")}
+
+Please confirm one time and email a Google Meet link.`;
+
+  const sent = await notify(
+    env,
+    "ScaleBridge | Meeting request | " + company,
+    body,
+    email
+  );
+
+  if (sent) {
+    return {
+      reply:
+        "Thank you! We've received your three preferred meeting times. Our team will confirm one by email. Your meeting is not booked yet.",
+      requestReceived: true
+    };
+  }
+
+  return {
+    reply:
+      `Your request could not be delivered. Please email ${EMAIL}.`,
+    requestReceived: false
+  };
+}
+
+function headers(origin) {
+  const allowed = [
+    ORIGIN,
+    "https://www.scalebridgesolutions.de"
+  ];
+
+  return {
+    "Access-Control-Allow-Origin":
+      allowed.includes(origin)
+        ? origin
+        : ORIGIN,
+
+    "Access-Control-Allow-Methods":
+      "GET, POST, OPTIONS",
+
+    "Access-Control-Allow-Headers":
+      "Content-Type",
+
+    "Content-Type":
+      "application/json; charset=utf-8",
+
+    "Vary": "Origin"
+  };
+}
+
+function json(data, status, origin) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: headers(origin)
+    }
+  );
+}
+
+function isUnpricedService(s) {
+  return /\b(?:AI|automation|chatbot|bot\b|data annotation|content moderation|integration|software|setup|implementation)\b|الذكاء الاصطناعي|أتمتة|روبوت|تعليق البيانات|تصنيف البيانات|إشراف المحتوى|تكامل/i.test(s);
+}
+
+function asksOnlyUnpriced(s) {
+  return isUnpricedService(s) &&
+    rePrice.test(s) &&
+    !/(?:\bagents?\b|\bFTE\b|موظف)/i.test(s);
 }
 
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get("Origin") || "";
+    const origin =
+      request.headers.get("Origin") || "";
+
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
-        headers: corsHeaders(origin)
+        headers: headers(origin)
       });
     }
 
-    if (request.method === "GET" && url.pathname === "/") {
-      return json({
-        status: "ok",
-        service: "ScaleBridge AI V8",
-        aiConfigured: Boolean(env.AI)
-      }, 200, origin);
+    if (
+      request.method === "GET" &&
+      url.pathname === "/"
+    ) {
+      return json(
+        {
+          status: "ok",
+          service: "ScaleBridge AI V16",
+          aiConfigured: Boolean(env.AI),
+          shrinkageDefault: "25%"
+        },
+        200,
+        origin
+      );
     }
 
     if (url.pathname !== "/chat") {
-      return json({ error: "Not found" }, 404, origin);
+      return json(
+        { error: "Not found" },
+        404,
+        origin
+      );
     }
 
     if (request.method !== "POST") {
-      return json({ error: "Method not allowed" }, 405, origin);
+      return json(
+        { error: "Method not allowed" },
+        405,
+        origin
+      );
     }
 
     if (
       origin &&
-      origin !== ORIGIN &&
-      origin !== "https://www.scalebridgesolutions.de"
+      ![
+        ORIGIN,
+        "https://www.scalebridgesolutions.de"
+      ].includes(origin)
     ) {
-      return json({ error: "Origin not allowed" }, 403, origin);
+      return json(
+        { error: "Origin not allowed" },
+        403,
+        origin
+      );
     }
 
     let body;
 
     try {
-      body = await request.json();
+      const raw = await request.text();
+
+      if (raw.length > 24000) {
+        return json(
+          { error: "Request too large" },
+          413,
+          origin
+        );
+      }
+
+      body = JSON.parse(raw);
+
     } catch {
-      return json({ error: "Invalid JSON" }, 400, origin);
+      return json(
+        { error: "Invalid JSON" },
+        400,
+        origin
+      );
     }
 
-    const message = String(body?.message || "").trim();
-    const history = sanitizeHistory(body?.history);
+    const message =
+      String(body?.message || "").trim();
 
-    if (JSON.stringify(body).length > 24000) return json({error:"Request too large"},413,origin);
+    const history =
+      cleanHistory(body?.history);
 
     if (message.length > 4000) {
-      return json({ error: "Message too long" }, 400, origin);
+      return json(
+        { error: "Message too long" },
+        400,
+        origin
+      );
     }
 
     try {
-      if (body?.meeting) return json(await meetingReply(body.meeting,env),200,origin);
+
+      // MEETING REQUEST
+
+      if (body?.meeting) {
+        return json(
+          await meeting(body.meeting, env),
+          200,
+          origin
+        );
+      }
+
+      // PRELIMINARY PROPOSAL
 
       if (body?.proposal) {
-        const result = proposalReply(body.proposal, history);
+        const result = proposal(
+          body.proposal,
+          history
+        );
+
         if (result.proposalReady) {
-          const note = await notifyOwner(env,'ScaleBridge | Preliminary proposal | '+safeField(body.proposal.company),
-            result.proposalText+'\n\nClient consent to request proposal: Yes');
-          result.notificationSent = note.sent;
-          if (!note.sent) result.notificationMessage = 'The proposal is ready, but the email notification was not delivered. Please email our team to continue.';
+          result.notificationSent =
+            await notify(
+              env,
+              "ScaleBridge | Preliminary proposal | " +
+                safe(body.proposal.company),
+              result.proposalText +
+                "\n\nClient consent: Yes",
+              safe(body.proposal.email, 254)
+            );
+
+          if (!result.notificationSent) {
+            result.notificationMessage =
+              "Proposal generated, but email notification failed. Please contact our team.";
+          }
         }
+
         return json(result, 200, origin);
       }
 
       if (!message) {
-        return json({ error: "Invalid message" }, 400, origin);
+        return json(
+          { error: "Message required" },
+          400,
+          origin
+        );
       }
 
-      if (asksCoverage(message)) {
-        const reply = coverageReply(message);
-        if (reply) return json({ reply }, 200, origin);
+      const current = scopeOf(message);
+      const previous = latestScope(history);
+      const arabic = isAr(message);
+
+      const wantsAdvice =
+        reAdvice.test(message);
+
+      const wantsPrice =
+        rePrice.test(message);
+
+      const wantsShrink =
+        reShrink.test(message);
+
+      const coverage =
+        resolve247(message, history);
+
+      // CUSTOM SERVICE PRICING
+
+      if (asksOnlyUnpriced(message)) {
+        return json(
+          {
+            reply: arabic
+              ? "تُسعّر هذه الخدمة حسب نطاق المشروع والتكاملات المطلوبة، ولا يوجد سعر شهري ثابت معتمد لها حالياً. هل ترغب في مناقشة المتطلبات للحصول على عرض مخصص؟"
+              : "This service is priced according to project scope and required integrations. We do not have a published fixed monthly rate for it. Would you like a tailored quote?"
+          },
+          200,
+          origin
+        );
       }
 
-      if (asksPricing(message)) {
-        const reply = pricingReply(message, history);
-        if (reply) return json({ reply }, 200, origin);
+      // SHRINKAGE CALCULATIONS
+
+      if (wantsShrink) {
+        return json(
+          {
+            reply: shrinkAnswer(
+              coverage || current || previous,
+              message
+            )
+          },
+          200,
+          origin
+        );
       }
 
-      if (asksRecommendation(message)) {
-        return json({
-          reply: recommendationReply(message, history)
-        }, 200, origin);
+      // 24/7 COVERAGE CALCULATIONS
+
+      if (coverage) {
+        return json(
+          {
+            reply: coverageAnswer(
+              coverage,
+              arabic
+            )
+          },
+          200,
+          origin
+        );
       }
+
+      // STAFFING RECOMMENDATIONS
+
+      if (wantsAdvice) {
+        const n =
+          current?.counts?.agent ||
+          current?.counts?.nightAgent ||
+          current?.n ||
+          previous?.counts?.agent ||
+          previous?.counts?.nightAgent ||
+          previous?.n;
+
+        let reply = structure(n, arabic);
+
+        if (
+          wantsPrice &&
+          current &&
+          current.kind !== "247"
+        ) {
+          reply +=
+            "\n\n" +
+            baseAnswer(current, arabic);
+        }
+
+        return json(
+          { reply },
+          200,
+          origin
+        );
+      }
+
+      // STANDARD ROLE PRICING
+
+      if (
+        current &&
+        (
+          current.kind === "roles" ||
+          current.kind === "shift"
+        ) &&
+        wantsPrice
+      ) {
+        return json(
+          {
+            reply: baseAnswer(
+              current,
+              arabic
+            )
+          },
+          200,
+          origin
+        );
+      }
+
+      // PRICING FOLLOW-UP
+
+      if (
+        wantsPrice &&
+        previous &&
+        !isUnpricedService(message)
+      ) {
+        return json(
+          {
+            reply:
+              previous.kind === "247"
+                ? coverageAnswer(
+                    previous,
+                    arabic
+                  )
+                : baseAnswer(
+                    previous,
+                    arabic
+                  )
+          },
+          200,
+          origin
+        );
+      }
+
+      // AI FALLBACK
 
       if (!env.AI) {
-        return json({
-          reply: isArabic(message)
-            ? "يسعدنا نساعدك بخدمات ScaleBridge وأسعارنا. تواصل معنا على info@scalebridgesolutions.de."
-            : "We'd be happy to help with our services and transparent pricing. Contact info@scalebridgesolutions.de."
-        }, 200, origin);
+        return json(
+          {
+            reply: arabic
+              ? `يسعدنا مساعدتك! تواصل مع فريق ScaleBridge عبر ${EMAIL}.`
+              : `We're happy to help! Contact ${EMAIL}.`
+          },
+          200,
+          origin
+        );
       }
 
-      const result = await env.AI.run(MODEL, {
-        messages: [
-          { role: "system", content: SYSTEM },
-          ...history,
-          { role: "user", content: message }
-        ],
-        max_tokens: 450,
-        temperature: 0.2
-      });
+      const result = await env.AI.run(
+        MODEL,
+        {
+          messages: [
+            {
+              role: "system",
+              content: SYSTEM
+            },
+            ...history,
+            {
+              role: "user",
+              content: message
+            }
+          ],
+          max_tokens: 260,
+          temperature: 0.15
+        }
+      );
 
-      return json({
-        reply: cleanReply(result?.response) ||
-          "Could you clarify your question?"
-      }, 200, origin);
+      return json(
+        {
+          reply: String(
+            result?.response ||
+            (
+              arabic
+                ? "هل يمكنك توضيح طلبك قليلاً؟"
+                : "Could you clarify your question?"
+            )
+          )
+            .replace(/\*\*/g, "")
+            .trim()
+        },
+        200,
+        origin
+      );
 
-    } catch (error) {
-      console.error("ScaleBridge AI V8:", error);
+    } catch (e) {
+      console.error(
+        "ScaleBridge V16",
+        String(e)
+      );
 
-      return json({
-        reply: isArabic(message)
-          ? "صار خطأ تقني مؤقت. تواصل معنا على info@scalebridgesolutions.de."
-          : "A temporary technical issue occurred. Please contact info@scalebridgesolutions.de."
-      }, 200, origin);
+      return json(
+        {
+          reply: isAr(message)
+            ? `واجهنا مشكلة تقنية مؤقتة. تواصل معنا عبر ${EMAIL}.`
+            : `A temporary technical issue occurred. Please contact ${EMAIL}.`
+        },
+        200,
+        origin
+      );
     }
   }
 };
