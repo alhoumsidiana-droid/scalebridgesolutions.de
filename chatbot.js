@@ -100,8 +100,8 @@ function init() {
   lead.innerHTML = `
     <strong>Generate Your Preliminary Proposal</strong>
     <p>
-      Enter two details to receive a personalized
-      preliminary proposal based on our published rates.
+      Tell us a little about your project. If you are unsure about
+      staffing, we can review your requirements before quoting.
     </p>
 
     <input
@@ -120,6 +120,29 @@ function init() {
       maxlength="254"
       required
     >
+
+    <label class="chat-proposal-field">
+      Team size (optional)
+      <input name="teamSize" type="number" min="1" max="5000"
+        placeholder="Number of agents, if known">
+    </label>
+
+    <label class="chat-proposal-field">
+      Coverage / shifts
+      <select name="coverage">
+        <option value="unsure">Not sure yet</option>
+        <option value="business">Business hours / daytime</option>
+        <option value="night">Night shift</option>
+        <option value="247total">24/7 — total team size</option>
+        <option value="247concurrent">24/7 — agents online simultaneously</option>
+      </select>
+    </label>
+
+    <label class="chat-proposal-field">
+      Project details (optional)
+      <textarea name="details" maxlength="1000" rows="3"
+        placeholder="Channels, languages, launch date, or other requirements"></textarea>
+    </label>
 
     <label class="chat-consent">
       <input type="checkbox" name="consent" required>
@@ -517,6 +540,21 @@ function init() {
       display: none !important;
     }
 
+    .chat-panel.proposal-mode .chat-proposal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .chat-panel.proposal-mode .chat-proposal-field input,
+    .chat-panel.proposal-mode .chat-proposal-field select,
+    .chat-panel.proposal-mode .chat-proposal-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+      padding: 10px;
+    }
+
     .chat-panel.proposal-mode .chat-lead
     .chat-generate-submit {
       background: #d7aa55;
@@ -628,6 +666,9 @@ function init() {
       String(d.get('email') || '').trim();
 
     const consent = d.get('consent') === 'on';
+    const teamSize = String(d.get('teamSize') || '').trim();
+    const coverage = String(d.get('coverage') || 'unsure');
+    const details = String(d.get('details') || '').trim();
 
     if (!company || !email || !consent) {
       lead.reportValidity();
@@ -642,9 +683,10 @@ function init() {
 
     submitButton.disabled = true;
 
-    const wait = bubble(
-      'Preparing your personalized preliminary proposal...'
-    );
+    // Keep the status visible after the proposal form closes.
+    const wait = document.createElement('p');
+    wait.className = 'chat-bubble';
+    wait.textContent = 'Preparing your preliminary proposal...';
 
     const controller = new AbortController();
 
@@ -654,14 +696,46 @@ function init() {
     );
 
     try {
+      // The Worker V15/V16 reads scope from user history.
+      // A final explicit scope overrides earlier chat estimates.
+      const proposalHistory = history.slice(-14);
+      if (teamSize) {
+        const count = Number(teamSize);
+        if (!Number.isSafeInteger(count) || count < 1 || count > 5000) {
+          throw Error('Invalid team size');
+        }
+        const scopeMessage = coverage === '247concurrent'
+          ? `${count} agents online simultaneously 24/7`
+          : coverage === '247total'
+            ? `${count} total agents for 24/7 coverage`
+            : coverage === 'night'
+              ? `${count} night shift agents`
+              : coverage === 'business'
+                ? `${count} day shift agents`
+                : `${count} support agents; coverage to be confirmed`;
+        proposalHistory.push({ role: 'user', content: scopeMessage });
+      } else if (coverage === 'unsure') {
+        // Do not accidentally reuse an old team size when unsure.
+        proposalHistory.length = 0;
+      }
+      if (details) {
+        proposalHistory.push({
+          role: 'user',
+          content: 'Project details (unconfirmed): ' + details
+        });
+      }
+
       const result = await request(
         {
           message: 'Generate preliminary proposal',
-          history: history.slice(-16),
+          history: proposalHistory,
           proposal: {
             company,
             email,
-            consent
+            consent,
+            teamSize: teamSize || null,
+            coverage,
+            details
           }
         },
         controller.signal
@@ -670,6 +744,9 @@ function init() {
       wait.textContent =
         result.reply ||
         'Unable to prepare your proposal. Please try again.';
+      showProposalForm(false);
+      messages.append(wait);
+      messages.scrollTop = messages.scrollHeight;
 
       if (
         result.proposalReady &&
@@ -708,6 +785,7 @@ function init() {
         EMAIL + '.';
 
       showProposalForm(false);
+      messages.append(wait);
     } finally {
       clearTimeout(timeout);
 
@@ -723,10 +801,10 @@ function init() {
 
   const facts = {
     services:
-      'ScaleBridge provides managed Arabic and English customer support, data annotation, content moderation and AI-assisted workflows.',
+      'ScaleBridge provides managed Arabic and English inbound and outbound customer support across email, live chat, social media and helpdesk, plus AI-powered customer support and automation, data annotation and content moderation. Custom AI services are scoped individually.',
 
     pricing:
-      'Published monthly rates: Standard Agent $900, Night Shift Agent $1,050, Senior Agent $1,050, Team Leader $1,350, Group Leader $1,650, QA Analyst $1,100 and Operations Manager $2,000. Standard minimum support team: 5 agents. No automatic volume discounts. No hidden fees.',
+      'Published monthly FTE rates: Standard Agent $900, Night Shift Agent $1,050, Senior Agent $1,050, Team Leader $1,350, Group Leader $1,650, QA Analyst $1,100 and Operations Manager $2,000. Smaller teams can be discussed. AI and other custom projects require a tailored quote. No automatic volume discounts or hidden fees.',
 
     center:
       'ScaleBridge is developing its Damascus delivery operation. Facility arrangements are confirmed for each project.',
@@ -848,28 +926,19 @@ function init() {
     }
   });
 
-  // NEW WELCOME MESSAGE — V15
+  // SHORT BILINGUAL WELCOME — V16
 
   messages.replaceChildren();
 
   bubble(
-    `Welcome to ScaleBridge Solutions! 👋
+    `Welcome to ScaleBridge! 👋
+Your customer support team starts here.
+Explore our services, get instant pricing, or request a preliminary proposal.
 
-Looking for the right customer support team for your business?
-
-Explore our services, get transparent pricing, and calculate your team's monthly cost in seconds.
-
-Need something tailored? Let's create your preliminary proposal.
-
-Ready to scale? Let's get started! 🚀
-
-مرحباً بك في ScaleBridge Solutions! 👋
-
-هل تبحث عن فريق دعم عملاء يتناسب مع احتياجات أعمالك؟
-
-اكتشف خدماتنا وأسعارنا بكل شفافية، واحصل على تقدير فوري لتكلفة فريقك أو عرض مبدئي مصمّم خصيصاً لمشروعك.
-
-جاهز للانطلاق؟ لنبدأ! 🚀`
+مرحباً بك في ScaleBridge! 👋
+فريق دعم عملائك يبدأ من هنا.
+اكتشف خدماتنا وأسعارنا، أو اطلب عرضاً مبدئياً يناسب مشروعك.`
+  
   );
 }
 
