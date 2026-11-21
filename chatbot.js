@@ -122,20 +122,23 @@ function init() {
     >
 
     <label class="chat-proposal-field">
-      Team size (optional)
+      <span class="chat-team-size-label">Team size (optional)</span>
       <input name="teamSize" type="number" min="1" max="5000"
         placeholder="Number of agents, if known">
     </label>
 
     <label class="chat-proposal-field">
-      Coverage / shifts
+      What coverage do you need?
       <select name="coverage">
         <option value="unsure">Not sure yet</option>
-        <option value="business">Business hours / daytime</option>
-        <option value="night">Night shift</option>
-        <option value="247total">24/7 — total team size</option>
-        <option value="247concurrent">24/7 — agents online simultaneously</option>
+        <option value="business">Business hours only</option>
+        <option value="night">Night shift only</option>
+        <option value="247total">24/7 — Fixed team size</option>
+        <option value="247concurrent">24/7 — Continuous live coverage</option>
       </select>
+      <small class="chat-coverage-help" aria-live="polite">
+        Select a coverage option to see what the team size means.
+      </small>
     </label>
 
     <label class="chat-proposal-field">
@@ -649,6 +652,36 @@ function init() {
 
     return response.json();
   }
+
+  // Clarify the meaning of the agent count for each coverage model.
+  const coverageSelect = lead.querySelector('select[name="coverage"]');
+  const teamSizeInput = lead.querySelector('input[name="teamSize"]');
+  const teamSizeLabel = lead.querySelector('.chat-team-size-label');
+  const coverageHelp = lead.querySelector('.chat-coverage-help');
+
+  function updateCoverageLabels() {
+    const value = coverageSelect.value;
+    const hints = {
+      unsure: 'We can confirm the right staffing and shifts together.',
+      business: 'Agents working during your regular business hours.',
+      night: 'Agents assigned to night shifts.',
+      '247total': 'I already know how many agents I want to hire. We will confirm the achievable 24/7 coverage.',
+      '247concurrent': 'I need this many agents online at all times. We will calculate the total team required.'
+    };
+    const labels = {
+      '247total': 'Total number of agents (optional)',
+      '247concurrent': 'Agents required online at the same time (optional)'
+    };
+    teamSizeLabel.textContent = labels[value] || 'Team size (optional)';
+    teamSizeInput.placeholder = value === '247concurrent'
+      ? 'Agents online simultaneously'
+      : value === '247total'
+        ? 'Total number of agents'
+        : 'Number of agents, if known';
+    coverageHelp.textContent = hints[value] || hints.unsure;
+  }
+  coverageSelect.addEventListener('change', updateCoverageLabels);
+  updateCoverageLabels();
 
   // GENERATE PROPOSAL
 
