@@ -887,7 +887,7 @@ function proposal(data, history) {
       `40 paid hours/week. Management and QA excluded.`;
 
     amount = p.cost;
-    requiresReview = false;
+    requiresReview = true; // 24/7 shift rosters and relief coverage require validation.
 
   } else if (scope?.kind === "247") {
     details =
@@ -995,7 +995,6 @@ function workloadProposal(data, history) {
   if (!p || p.error) return { reply: p?.error || "Workload details are required.", proposalReady: false };
   const coverage = String(data.coverage || "unsure");
   const coverageReview = coverage === "247total" || coverage === "247concurrent" || coverage === "night";
-  const priced = !p.needsReview && !coverageReview;
   const text = [
     "SCALEBRIDGE SOLUTIONS",
     "WORKLOAD-BASED PRELIMINARY ASSESSMENT",
@@ -1012,10 +1011,10 @@ function workloadProposal(data, history) {
     "Shrinkage: " + p.shrink + "%",
     "Estimated productive capacity/FTE/month: " + p.productiveHoursPerFte.toFixed(1) + " hours",
     "Indicative workload-equivalent team: " + p.fte + " FTE",
-    "Indicative base agent cost: " + usd(p.cost) + "/month at $900/FTE",
+    "Indicative workload-only base agent cost: " + usd(p.cost) + "/month at $900/FTE",
     "",
     "IMPORTANT: " + p.reason,
-    coverageReview ? "Requested coverage requires a separate roster and shift-pricing review. The figure above is NOT a coverage quote." : "Coverage and staffing by interval require confirmation.",
+    coverageReview ? "Requested coverage requires a separate roster and shift-pricing review. The workload-only cost above is NOT a coverage quote." : "Coverage and staffing by interval require confirmation.",
     "This estimate excludes night premiums, management, QA, software, integrations, taxes and unpriced custom services.",
     "Do not treat the indicative cost as a final contractual quote.",
     "Client notes: " + safe(data.details, 1000),
