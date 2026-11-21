@@ -588,38 +588,31 @@ function coverageAnswer(
       : `With ${scope.n} employees in total, how many need to be online simultaneously?`;
   }
 
-  const p = coveragePlan(scope.n, factor);
   const pct = Math.round(factor * 100);
-
+  const weeklyHours = scope.n * 168;
+  const minimumFte = Math.ceil(weeklyHours / (40 * (1 - factor)));
   if (ar) {
-    return `تقدير تغطية 24/7 لـ ${scope.n} موظفين متواجدين بالتزامن:
+    return `تقدير مبدئي لتغطية 24/7 مع ${scope.n} موظفين متواجدين بنفس الوقت:
 
-• ساعات التغطية أسبوعياً: ${p.hours}
-• ${p.day} موظفاً نهارياً × $900 = ${usd(p.day * 900)}
-• ${p.night} موظفاً ليلياً × $1,050 = ${usd(p.night * 1050)}
-• إجمالي الفريق: ${p.total} FTE
-• التكلفة الشهرية: ${usd(p.cost)}
+• ساعات التغطية المطلوبة أسبوعياً: ${weeklyHours}
+• الحد الأدنى الحسابي للطاقة التشغيلية: ${minimumFte} FTE
 
-الافتراضات: 40 ساعة مدفوعة أسبوعياً لكل FTE، و${pct}% للغياب والإجازات، و16 ساعة نهارية و8 ليلية يومياً.
+الافتراضات: 40 ساعة مدفوعة أسبوعياً و${pct}% Shrinkage. العدد الفعلي قد يزيد بعد تصميم المناوبات وفترات الراحة والتغطية المطلوبة.
 
-تقدير مبدئي يخضع لمراجعة جدول المناوبات. لا يشمل الإدارة أو QA تلقائياً.
+تحدد ScaleBridge جدول المناوبات وتقسيم النهار والليل بعد تأكيد المنطقة الزمنية ومتطلبات الخدمة. لا يمكن تأكيد تكلفة شهرية دقيقة قبل تحديد ساعات العمل الليلية وتوزيع الفريق. الأسعار المعتمدة: $900 للموظف العادي و$1,050 للموظف الليلي شهرياً.
 
-هل ترغب بعرض سعر مبدئي؟`;
+هل ترغب بعرض مبدئي ومراجعة المتطلبات؟`;
   }
+  return `Preliminary 24/7 coverage assessment for ${scope.n} agents online simultaneously:
 
-  return `24/7 estimate for ${scope.n} agents online simultaneously:
+• Required weekly coverage: ${weeklyHours} agent-hours
+• Mathematical workload-capacity minimum: ${minimumFte} FTE
 
-• Weekly coverage: ${p.hours} hours
-• ${p.day} Day Shift FTE × $900 = ${usd(p.day * 900)}
-• ${p.night} Night Shift FTE × $1,050 = ${usd(p.night * 1050)}
-• Estimated team: ${p.total} FTE
-• Monthly estimate: ${usd(p.cost)}
+Assumptions: 40 paid hours/FTE/week and ${pct}% shrinkage. Actual roster headcount may be higher once shifts, rest periods and service levels are validated.
 
-Assumptions: 40 paid hours/FTE/week, ${pct}% shrinkage, 16 daytime and 8 nighttime hours/day.
+ScaleBridge designs the shifts after confirming your time zone and service requirements. Monthly pricing is pending roster validation and the agreed night-shift window. Approved rates remain $900 per standard agent and $1,050 per night-shift agent per month.
 
-Subject to roster validation. Management and QA are not automatically included.
-
-Would you like a preliminary proposal?`;
+Would you like a preliminary proposal and scope review?`;
 }
 
 function structure(n, ar) {
@@ -877,17 +870,17 @@ function proposal(data, history) {
     scope.n &&
     scope.mode === "concurrent"
   ) {
-    const p = coveragePlan(scope.n);
-
+    const weeklyHours = scope.n * 168;
+    const capacityMinimum = Math.ceil(weeklyHours / (40 * (1 - SHRINKAGE)));
     details =
-      `24/7: ${scope.n} agents online simultaneously.\n` +
-      `${p.day} Day Shift FTE × $900 = ${usd(p.day * 900)}\n` +
-      `${p.night} Night Shift FTE × $1,050 = ${usd(p.night * 1050)}\n` +
-      `Estimated ${p.total} FTE; 25% shrinkage, ` +
-      `40 paid hours/week. Management and QA excluded.`;
-
-    amount = p.cost;
-    requiresReview = true; // 24/7 shift rosters and relief coverage require validation.
+      `24/7: ${scope.n} agents online simultaneously.\\n` +
+      `Weekly coverage: ${weeklyHours} agent-hours.\\n` +
+      `Mathematical capacity minimum: ${capacityMinimum} FTE (40 paid hours/week, 25% shrinkage).\\n` +
+      `Final roster headcount, time zone, night-shift window and SLA require confirmation.\\n` +
+      `Approved base rates: standard agent $900/FTE/month; night agent $1,050/FTE/month.\\n` +
+      `Monthly price pending roster design; no assumed 16/8 day-night split.`;
+    amount = null;
+    requiresReview = true;
 
   } else if (scope?.kind === "247") {
     details =
