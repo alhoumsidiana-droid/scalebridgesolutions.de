@@ -953,6 +953,77 @@ Contact: ${EMAIL}`;
   };
 }
 
+
+function workloadEstimate(input) {
+  if (!input || typeof input !== "object") return null;
+  const channel = String(input.channel || "");
+  const volume = Number(input.monthlyVolume);
+  const aht = Number(input.ahtMinutes);
+  const days = Number(input.workingDays);
+  const hoursPerDay = Number(input.hoursPerDay);
+  const occupancy = Number(input.occupancyPct);
+  const shrink = Number(input.shrinkagePct);
+  const valid = ["tickets", "email", "chat", "voice"].includes(channel) &&
+    Number.isInteger(volume) && volume >= 1 && volume <= 10000000 &&
+    Number.isFinite(aht) && aht >= 0.5 && aht <= 180 &&
+    Number.isInteger(days) && days >= 1 && days <= 31 &&
+    Number.isFinite(hoursPerDay) && hoursPerDay >= 1 && hoursPerDay <= 12 &&
+    Number.isFinite(occupancy) && occupancy >= 50 && occupancy <= 90 &&
+    Number.isFinite(shrink) && shrink >= 0 && shrink <= 45;
+  if (!valid) return { error: "Please check workload inputs and allowed ranges." };
+  const workloadHours = volume * aht / 60;
+  const productiveHoursPerFte = days * hoursPerDay * (occupancy / 100) * (1 - shrink / 100);
+  const fte = Math.ceil(workloadHours / productiveHoursPerFte);
+  if (!Number.isSafeInteger(fte) || fte > 5000) return { error: "Volume exceeds supported estimation range. Request a custom workforce plan." };
+  const cost = fte * RATES.agent;
+  const needsReview = channel === "voice" || channel === "chat";
+  const reason = channel === "voice"
+    ? "Voice requires arrival patterns, peak intervals, target service level and an Erlang-based staffing review; monthly averages alone cannot validate queue coverage."
+    : channel === "chat"
+      ? "Live chat requires concurrency, arrival patterns, response-time targets and peak staffing validation."
+      : "This is a workload-capacity estimate, not a shift roster or response-time SLA guarantee.";
+  return { channel, volume, aht, days, hoursPerDay, occupancy, shrink, workloadHours, productiveHoursPerFte, fte, cost, needsReview, reason };
+}
+
+function workloadProposal(data, history) {
+  const company = safe(data?.company);
+  const email = safe(data?.email, 254);
+  if (!data?.consent || company.length < 2 || !emailOK(email)) {
+    return { reply: "Please provide a valid company name, business email and consent.", proposalReady: false };
+  }
+  const p = workloadEstimate(data.workload);
+  if (!p || p.error) return { reply: p?.error || "Workload details are required.", proposalReady: false };
+  const coverage = String(data.coverage || "unsure");
+  const coverageReview = coverage === "247total" || coverage === "247concurrent" || coverage === "night";
+  const priced = !p.needsReview && !coverageReview;
+  const text = [
+    "SCALEBRIDGE SOLUTIONS",
+    "WORKLOAD-BASED PRELIMINARY ASSESSMENT",
+    "",
+    "Prepared for: " + company,
+    "Business email: " + email,
+    "Channel: " + p.channel,
+    "Monthly volume: " + p.volume.toLocaleString("en-US"),
+    "Average handling time: " + p.aht + " minutes",
+    "Estimated monthly handling workload: " + p.workloadHours.toFixed(1) + " hours",
+    "Working days/month: " + p.days,
+    "Paid hours/FTE/day: " + p.hoursPerDay,
+    "Occupancy: " + p.occupancy + "%",
+    "Shrinkage: " + p.shrink + "%",
+    "Estimated productive capacity/FTE/month: " + p.productiveHoursPerFte.toFixed(1) + " hours",
+    "Indicative workload-equivalent team: " + p.fte + " FTE",
+    "Indicative base agent cost: " + usd(p.cost) + "/month at $900/FTE",
+    "",
+    "IMPORTANT: " + p.reason,
+    coverageReview ? "Requested coverage requires a separate roster and shift-pricing review. The figure above is NOT a coverage quote." : "Coverage and staffing by interval require confirmation.",
+    "This estimate excludes night premiums, management, QA, software, integrations, taxes and unpriced custom services.",
+    "Do not treat the indicative cost as a final contractual quote.",
+    "Client notes: " + safe(data.details, 1000),
+    "Contact: " + EMAIL
+  ].join("\n");
+  return { reply: text, proposalText: text, proposalReady: true, requiresReview: true, workloadBased: true };
+}
+
 async function notify(
   env,
   subject,
@@ -1186,7 +1257,7 @@ export default {
       return json(
         {
           status: "ok",
-          service: "ScaleBridge AI V16",
+          service: "ScaleBridge AI V18",
           aiConfigured: Boolean(env.AI),
           shrinkageDefault: "25%"
         },
@@ -1277,10 +1348,9 @@ export default {
       // PRELIMINARY PROPOSAL
 
       if (body?.proposal) {
-        const result = proposal(
-          body.proposal,
-          history
-        );
+        const result = body.proposal.mode === 'workload'
+          ? workloadProposal(body.proposal, history)
+          : proposal(body.proposal, history);
 
         if (result.proposalReady) {
           result.notificationSent =
