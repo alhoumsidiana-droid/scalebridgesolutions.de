@@ -613,6 +613,20 @@ function init() {
     }
   `;
 
+  proposalStyle.textContent += `
+    .chat-estimate-card { background:#fff; color:#14233b; border:1px solid #dbe3ed; border-radius:14px; padding:16px; margin:10px 0; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+    .chat-estimate-heading { font-size:11px; font-weight:800; letter-spacing:.04em; color:#56677f; margin-bottom:16px; }
+    .chat-estimate-label { font-size:11px; font-weight:700; color:#53657c; margin-top:12px; }
+    .chat-estimate-team { display:block; font-size:22px; margin:3px 0 10px; }
+    .chat-estimate-cost { display:block; font-size:27px; line-height:1.3; color:#0b294c; background:#f3f6fa; border-radius:10px; padding:12px; margin-top:5px; }
+    .chat-estimate-section { border-top:1px solid #e5eaf0; margin-top:15px; padding-top:12px; }
+    .chat-estimate-section h4 { margin:0 0 9px; font-size:13px; }
+    .chat-estimate-row { display:flex; justify-content:space-between; gap:10px; padding:3px 0; }
+    .chat-estimate-row span { color:#5b6b7d; }
+    .chat-estimate-row strong { text-align:right; }
+    .chat-estimate-note { border-top:1px solid #e5eaf0; padding-top:12px; color:#53657c; font-size:12px; }
+    .chat-estimate-next { font-weight:700; }
+  `;
   document.head.append(proposalStyle);
 
   function showProposalForm(show) {
@@ -843,26 +857,43 @@ function init() {
         result.reply ||
         'Unable to prepare your proposal. Please try again.';
 
-      // Emphasize the final monthly estimate without inserting untrusted HTML.
-      if (result.proposalReady && result.proposalText) {
-        const costLine = String(result.proposalText)
-          .split('\\n')
-          .find(line => /^Indicative base agent cost:/i.test(line));
-        if (costLine && wait.textContent.includes(costLine)) {
-          const fullText = wait.textContent;
-          const start = fullText.indexOf(costLine);
-          const amount = costLine.match(/\\$[\\d,]+(?:\\.\\d{2})?\\/month/);
-          if (amount) {
-            const amountStart = start + costLine.indexOf(amount[0]);
-            wait.replaceChildren(
-              document.createTextNode(fullText.slice(0, amountStart)),
-              Object.assign(document.createElement('strong'), {
-                textContent: amount[0]
-              }),
-              document.createTextNode(fullText.slice(amountStart + amount[0].length))
-            );
+      if (result.proposalReady && result.workloadBased && result.proposalText) {
+        const lines = String(result.proposalText).split('\n');
+        const get = label => {
+          const found = lines.find(line => line.startsWith(label));
+          return found ? found.slice(label.length).trim() : '';
+        };
+        const card = document.createElement('section');
+        card.className = 'chat-estimate-card';
+        const add = (tag, className, content, parent = card) => {
+          const el = document.createElement(tag);
+          if (className) el.className = className;
+          el.textContent = content;
+          parent.append(el);
+          return el;
+        };
+        add('div', 'chat-estimate-heading', 'SCALEBRIDGE SOLUTIONS | PRELIMINARY WORKFORCE & COMMERCIAL ESTIMATE');
+        add('div', 'chat-estimate-label', 'ESTIMATED TEAM');
+        add('strong', 'chat-estimate-team', get('Indicative workload-equivalent team:'));
+        add('div', 'chat-estimate-label', 'INDICATIVE MONTHLY BASE COST');
+        add('strong', 'chat-estimate-cost', get('Indicative base agent cost:').split(' at ')[0]);
+        for (const [title, labels] of [
+          ['Project scope', ['Prepared for:', 'Channel:', 'Monthly volume:', 'Average handling time:']],
+          ['Workforce assumptions', ['Estimated monthly handling workload:', 'Working days/month:', 'Paid hours/FTE/day:', 'Occupancy:', 'Shrinkage:', 'Estimated productive capacity/FTE/month:']]
+        ]) {
+          const section = add('section', 'chat-estimate-section', '');
+          add('h4', '', title, section);
+          for (const label of labels) {
+            const val = get(label);
+            if (!val) continue;
+            const row = add('div', 'chat-estimate-row', '', section);
+            add('span', '', label.slice(0, -1), row);
+            add('strong', '', val, row);
           }
         }
+        add('p', 'chat-estimate-note', 'Planning estimate only; not a final contractual quote or SLA guarantee. Shift coverage, night premiums, management, QA, software, integrations and taxes require separate confirmation.');
+        add('p', 'chat-estimate-next', 'Next step: Confirm your coverage requirements and service levels with our team.');
+        wait.replaceWith(card);
       }
       showProposalForm(false);
       messages.append(wait);
