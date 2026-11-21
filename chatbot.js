@@ -122,12 +122,12 @@ function init() {
     >
 
     <label class="chat-proposal-field">
-      Estimate method
+      Choose Your Estimation Approach
       <select name="estimateMode">
-        <option value="team">I know my team size — Quick Estimate</option>
-        <option value="workload">I know my workload — Workload-Based Estimate</option>
+        <option value="team">Team-Based Estimate — Based on the number of agents you need</option>
+        <option value="workload">Workload-Based Estimate — Based on your expected customer interactions</option>
       </select>
-      <small>Workload estimates are indicative and require staffing validation.</small>
+      <small>Both estimates are preliminary and subject to staffing validation.</small>
     </label>
     <div class="chat-workload-fields" hidden>
       <label class="chat-proposal-field">Primary channel
