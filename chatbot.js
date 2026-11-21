@@ -829,9 +829,20 @@ function init() {
                 ? `${count} day shift agents`
                 : `${count} support agents; coverage to be confirmed`;
         proposalHistory.push({ role: 'user', content: scopeMessage });
-      } else if (coverage === 'unsure') {
-        // Do not accidentally reuse an old team size when unsure.
+      } else {
+        // A new form submission without a headcount must not reuse stale chat history.
+        // Explicit coverage is still recorded so the server requests scope review.
         proposalHistory.length = 0;
+        if (coverage === '247total' || coverage === '247concurrent' || coverage === 'night') {
+          proposalHistory.push({
+            role: 'user',
+            content: coverage === '247total'
+              ? '24/7 coverage requested; total agent count not provided'
+              : coverage === '247concurrent'
+                ? '24/7 concurrent coverage requested; simultaneous agent count not provided'
+                : 'Night shift coverage requested; agent count not provided'
+          });
+        }
       }
       if (details) {
         proposalHistory.push({
@@ -880,8 +891,8 @@ function init() {
         add('div', 'chat-estimate-heading', 'SCALEBRIDGE SOLUTIONS | PRELIMINARY WORKFORCE & COMMERCIAL ESTIMATE');
         add('div', 'chat-estimate-label', 'ESTIMATED TEAM');
         add('strong', 'chat-estimate-team', get('Indicative workload-equivalent team:'));
-        add('div', 'chat-estimate-label', 'INDICATIVE MONTHLY BASE COST');
-        add('strong', 'chat-estimate-cost', get('Indicative base agent cost:').split(' at ')[0]);
+        add('div', 'chat-estimate-label', 'INDICATIVE MONTHLY WORKLOAD-ONLY COST');
+        add('strong', 'chat-estimate-cost', get('Indicative workload-only base agent cost:').split(' at ')[0] || get('Indicative base agent cost:').split(' at ')[0]);
         for (const [title, labels] of [
           ['Project scope', ['Prepared for:', 'Channel:', 'Monthly volume:', 'Average handling time:']],
           ['Workforce assumptions', ['Estimated monthly handling workload:', 'Working days/month:', 'Paid hours/FTE/day:', 'Occupancy:', 'Shrinkage:', 'Estimated productive capacity/FTE/month:']]
