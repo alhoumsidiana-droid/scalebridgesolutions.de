@@ -180,6 +180,19 @@ function init() {
       </small>
     </label>
 
+    <label class="chat-proposal-field chat-coverage-timezone" hidden>
+      Customer time zone (for shift planning)
+      <select name="customerTimezone">
+        <option value="">Select time zone (optional)</option>
+        <option value="Saudi Arabia (UTC+3)">Saudi Arabia (UTC+3)</option>
+        <option value="United Arab Emirates (UTC+4)">United Arab Emirates (UTC+4)</option>
+        <option value="Kuwait / Qatar / Bahrain (UTC+3)">Kuwait / Qatar / Bahrain (UTC+3)</option>
+        <option value="Oman (UTC+4)">Oman (UTC+4)</option>
+        <option value="Other / to be confirmed">Other / to be confirmed</option>
+      </select>
+      <small>ScaleBridge designs the shifts after reviewing your service requirements.</small>
+    </label>
+
     <label class="chat-proposal-field">
       Project details (optional)
       <textarea name="details" maxlength="1000" rows="3"
@@ -711,6 +724,7 @@ function init() {
   const teamSizeInput = lead.querySelector('input[name="teamSize"]');
   const teamSizeLabel = lead.querySelector('.chat-team-size-label');
   const coverageHelp = lead.querySelector('.chat-coverage-help');
+  const coverageTimezone = lead.querySelector('.chat-coverage-timezone');
 
   function updateCoverageLabels() {
     const value = coverageSelect.value;
@@ -732,6 +746,7 @@ function init() {
         ? 'Total number of agents'
         : 'Number of agents, if known';
     coverageHelp.textContent = hints[value] || hints.unsure;
+    coverageTimezone.hidden = !['247total', '247concurrent', 'night'].includes(value);
   }
   coverageSelect.addEventListener('change', updateCoverageLabels);
   updateCoverageLabels();
@@ -772,6 +787,8 @@ function init() {
     const teamSize = String(d.get('teamSize') || '').trim();
     const coverage = String(d.get('coverage') || 'unsure');
     const details = String(d.get('details') || '').trim();
+    const customerTimezone = String(d.get('customerTimezone') || '').trim();
+    const scopedDetails = [details, customerTimezone ? 'Customer time zone: ' + customerTimezone : ''].filter(Boolean).join('\n');
     const mode = String(d.get('estimateMode') || 'team');
     const workload = mode === 'workload' ? {
       channel: String(d.get('workloadChannel') || ''),
@@ -844,10 +861,10 @@ function init() {
           });
         }
       }
-      if (details) {
+      if (scopedDetails) {
         proposalHistory.push({
           role: 'user',
-          content: 'Project details (unconfirmed): ' + details
+          content: 'Project details (unconfirmed): ' + scopedDetails
         });
       }
 
@@ -863,7 +880,7 @@ function init() {
             workload,
             teamSize: teamSize || null,
             coverage,
-            details
+            details: scopedDetails
           }
         },
         controller.signal
