@@ -41,6 +41,12 @@ four short bullets.
 Answer the question directly, do not repeat previous
 information, ask at most one useful next-step question.
 
+Act as a consultative B2B sales advisor. Ask about channels,
+languages, volume, shifts and launch timing only when relevant.
+Offer a small pilot, scoped proposal or meeting naturally.
+Do not invent references, certifications, discounts or promises.
+For automation, annotation and moderation explain custom scoping.
+
 Longer answers only when explicitly requested.
 
 Do not claim a meeting is booked or a proposal email
@@ -195,6 +201,20 @@ const re247 =
 const reConcurrent =
   /simultaneous|concurrent|at\s+the\s+same\s+time|at\s+all\s+times|always\s+online|online\s+at\s+once|per\s+shift|each\s+shift|بنفس\s+الوقت|بنفس\s+اللحظة|أونلاين|اونلاين|متواجدين|في\s+نفس\s+الوقت|متصلين\s+دائماً/i;
 
+function concurrentCount(t) {
+  const s = norm(t).replace(/24\s*\/\s*7/g, ' ');
+  const p = [
+    /(\d{1,4})\s*(?:agents?|employees|موظف(?:ين|ون)?)\s*(?:online|logged\s*in|available|working|متصلين|متواجدين)/i,
+    /(\d{1,4})\s*(?:online|simultaneously|concurrently|متصلين|متواجدين)/i,
+    /(?:online|simultaneously|concurrently|متصلين|متواجدين)\s*(?:with|:|=|of)?\s*(\d{1,4})\s*(?:agents?|employees|موظف(?:ين|ون)?)?/i
+  ];
+  for (const re of p) {
+    const m = s.match(re);
+    if (m && good(Number(m[1]))) return Number(m[1]);
+  }
+  return null;
+}
+
 const reTotal =
   /in\s+total|total\s+agents|total\s+team|overall\s+headcount|إجمالي|بالمجموع|العدد\s+الكلي/i;
 
@@ -211,7 +231,7 @@ const reDay =
   /day\s*shift|daytime|day\s*only|نهاري|شفت\s*نهار|دوام\s*نهار/i;
 
 const reNight =
-  /night\s*shift|nighttime|night\s*only|ليلي|شفت\s*ليل|دوام\s*ليل/i;
+  /night\s*shift|nighttime|night\s*only|agents?\s+at\s+night|working\s+at\s+night|ليلي|شفت\s*ليل|دوام\s*ليل|موظف(?:ين|ون)?\s+بالليل/i;
 
 const reHours =
   /\b\d{1,2}\s*(?:hours?|hrs?)\s*(?:per\s*day|a\s*day|daily)|\b\d{1,2}\s*ساعات?\s*(?:يومياً|باليوم)/i;
@@ -352,7 +372,7 @@ function scopeOf(t) {
   if (re247.test(s)) {
     return {
       kind: "247",
-      n,
+      n: concurrentCount(s) || n,
       mode: reConcurrent.test(s)
         ? "concurrent"
         : reTotal.test(s)
@@ -456,7 +476,7 @@ function resolve247(m, h) {
   if (current?.kind === "247") {
     return {
       ...current,
-      n: current.n || prev?.n || prevN || null,
+      n: concurrentCount(m) || current.n || prev?.n || prevN || null,
       mode: current.mode || prev?.mode || null
     };
   }
@@ -474,7 +494,7 @@ function resolve247(m, h) {
     return {
       ...prev,
       mode,
-      n: headcount(s) || prev.n || prevN || null
+      n: concurrentCount(s) || headcount(s) || prev.n || prevN || null
     };
   }
 
@@ -661,7 +681,7 @@ function structure(n, ar) {
   return lines.join("\n");
 }
 
-function baseAnswer(scope, ar) {
+function baseAnswer(scope, ar, custom = false) {
   if (scope?.ambiguous) {
     return ar
       ? "يرجى تأكيد العدد المطلوب لكل دور."
@@ -676,12 +696,16 @@ function baseAnswer(scope, ar) {
       : "How many agents do you need? I can calculate the monthly cost.";
   }
 
+  const customNote = custom
+    ? (ar ? '\n\nخدمات الأتمتة وتصنيف البيانات والإشراف على المحتوى غير مشمولة، وتحتاج عرضاً منفصلاً حسب نطاق المشروع.' : '\n\nAI automation, data annotation and content moderation are not included; they require a separate scoped quote.')
+    : '';
+
   if (ar) {
     return `تقدير التكلفة الشهرية:
 
 ${q.lines.join("\n")}
 
-الإجمالي: ${usd(q.total)} شهرياً.
+الإجمالي: ${usd(q.total)} شهرياً.${customNote}
 
 لا رسوم مخفية أو خصومات تلقائية، ولا تُضاف الإدارة أو التغطية الاحتياطية تلقائياً.
 
@@ -694,7 +718,7 @@ ${q.lines.join("\n")}
 
 ${q.lines.join("\n")}
 
-Total: ${usd(q.total)}/month.
+Total: ${usd(q.total)}/month.${customNote}
 
 No hidden fees or automatic volume discounts.
 
@@ -887,6 +911,12 @@ function proposal(data, history) {
   } else if (scope?.ambiguous) {
     details =
       "Role quantities require clarification.";
+  }
+
+  const customRequested = history.some(x => x.role === 'user' && isUnpricedService(x.content));
+  if (customRequested) {
+    details += '\nCustom AI, annotation or moderation services are excluded and require a separate scoped quote.';
+    requiresReview = true;
   }
 
   const text = `SCALEBRIDGE SOLUTIONS
@@ -1360,7 +1390,7 @@ export default {
         ) {
           reply +=
             "\n\n" +
-            baseAnswer(current, arabic);
+            baseAnswer(current, arabic, isUnpricedService(message));
         }
 
         return json(
@@ -1384,7 +1414,8 @@ export default {
           {
             reply: baseAnswer(
               current,
-              arabic
+              arabic,
+              isUnpricedService(message)
             )
           },
           200,
