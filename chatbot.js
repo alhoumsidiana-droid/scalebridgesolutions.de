@@ -122,6 +122,44 @@ function init() {
     >
 
     <label class="chat-proposal-field">
+      Estimate method
+      <select name="estimateMode">
+        <option value="team">I know my team size — Quick Estimate</option>
+        <option value="workload">I know my workload — Workload-Based Estimate</option>
+      </select>
+      <small>Workload estimates are indicative and require staffing validation.</small>
+    </label>
+    <div class="chat-workload-fields" hidden>
+      <label class="chat-proposal-field">Primary channel
+        <select name="workloadChannel">
+          <option value="tickets">Support tickets</option>
+          <option value="email">Email</option>
+          <option value="chat">Live chat (requires review)</option>
+          <option value="voice">Voice calls (requires Erlang review)</option>
+        </select>
+      </label>
+      <label class="chat-proposal-field">Monthly contacts / tickets
+        <input name="monthlyVolume" type="number" min="1" max="10000000" step="1" value="12000">
+      </label>
+      <label class="chat-proposal-field">Average handling time (minutes)
+        <input name="ahtMinutes" type="number" min="0.5" max="180" step="0.5" value="6">
+      </label>
+      <label class="chat-proposal-field">Working days per month
+        <input name="workingDays" type="number" min="1" max="31" step="1" value="22">
+      </label>
+      <label class="chat-proposal-field">Paid hours per agent per day
+        <input name="hoursPerDay" type="number" min="1" max="12" step="0.5" value="8">
+      </label>
+      <label class="chat-proposal-field">Target occupancy (%)
+        <input name="occupancyPct" type="number" min="50" max="90" step="1" value="80">
+      </label>
+      <label class="chat-proposal-field">Shrinkage: breaks, leave, training (%)
+        <input name="shrinkagePct" type="number" min="0" max="45" step="1" value="25">
+      </label>
+      <small>Defaults are planning assumptions, not verified client metrics. For voice/live chat, the result is workload-equivalent capacity only, not a service-level staffing commitment.</small>
+    </div>
+
+    <label class="chat-proposal-field chat-team-fields">
       <span class="chat-team-size-label">Team size (optional)</span>
       <input name="teamSize" type="number" min="1" max="5000"
         placeholder="Number of agents, if known">
@@ -683,6 +721,19 @@ function init() {
   coverageSelect.addEventListener('change', updateCoverageLabels);
   updateCoverageLabels();
 
+  const estimateModeSelect = lead.querySelector('select[name="estimateMode"]');
+  const workloadFields = lead.querySelector('.chat-workload-fields');
+  const teamFields = lead.querySelector('.chat-team-fields');
+  function updateEstimateMode() {
+    const workload = estimateModeSelect.value === 'workload';
+    workloadFields.hidden = !workload;
+    teamFields.hidden = workload;
+    for (const el of workloadFields.querySelectorAll('input')) el.disabled = !workload;
+    teamSizeInput.disabled = workload;
+  }
+  estimateModeSelect.addEventListener('change', updateEstimateMode);
+  updateEstimateMode();
+
   // GENERATE PROPOSAL
 
   lead.addEventListener('submit', async e => {
@@ -702,6 +753,16 @@ function init() {
     const teamSize = String(d.get('teamSize') || '').trim();
     const coverage = String(d.get('coverage') || 'unsure');
     const details = String(d.get('details') || '').trim();
+    const mode = String(d.get('estimateMode') || 'team');
+    const workload = mode === 'workload' ? {
+      channel: String(d.get('workloadChannel') || ''),
+      monthlyVolume: Number(d.get('monthlyVolume')),
+      ahtMinutes: Number(d.get('ahtMinutes')),
+      workingDays: Number(d.get('workingDays')),
+      hoursPerDay: Number(d.get('hoursPerDay')),
+      occupancyPct: Number(d.get('occupancyPct')),
+      shrinkagePct: Number(d.get('shrinkagePct'))
+    } : null;
 
     if (!company || !email || !consent) {
       lead.reportValidity();
@@ -732,7 +793,9 @@ function init() {
       // The Worker V15/V16 reads scope from user history.
       // A final explicit scope overrides earlier chat estimates.
       const proposalHistory = history.slice(-14);
-      if (teamSize) {
+      if (mode === 'workload') {
+        proposalHistory.length = 0;
+      } else if (teamSize) {
         const count = Number(teamSize);
         if (!Number.isSafeInteger(count) || count < 1 || count > 5000) {
           throw Error('Invalid team size');
@@ -766,6 +829,8 @@ function init() {
             company,
             email,
             consent,
+            mode,
+            workload,
             teamSize: teamSize || null,
             coverage,
             details
