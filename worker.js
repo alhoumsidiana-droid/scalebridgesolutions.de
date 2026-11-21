@@ -248,9 +248,11 @@ const roleRegex = [
 ];
 
 function headcount(t) {
-  const s = norm(t);
+  // Exclude 24/7 notation so it cannot be mistaken for a headcount.
+  const s = norm(t).replace(/24\s*\/\s*7/g, " ");
 
   const patterns = [
+    /(\d{1,4})\s*(?:total|overall|إجمالي|بالمجموع)\s*(?:agents?|employees|staff|seats?|positions?|موظف(?:ين|ون)?|مقاعد?)/i,
     /(\d{1,4})\s*(?:agents?|employees|staff|seats?|positions?|موظف(?:ين|ون)?|مقاعد?)/i,
     /(?:agents?|employees|staff|seats?|positions?|موظف(?:ين|ون)?|مقاعد?)\s*(?:x|:|=|of)?\s*(\d{1,4})/i,
     /(?:need|require|want|looking for|أحتاج|نحتاج|أريد|نريد)\s*(\d{1,4})/i,
