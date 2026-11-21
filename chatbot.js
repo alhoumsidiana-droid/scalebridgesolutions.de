@@ -821,6 +821,12 @@ function init() {
 
   function local(question) {
     const t = question.toLowerCase();
+    if (/[\u0600-\u06ff]/.test(question)) {
+      if (/سعر|تكلف|قديش|دولار|تسعير/.test(t)) return 'تبدأ أسعار موظفي الدعم القياسي من 900 دولار شهرياً. الخدمات المخصصة مثل الأتمتة وتصنيف البيانات تُسعّر بشكل منفصل حسب المشروع.';
+      if (/أمن|سرية|حماية|بيانات|امتثال|شهادة/.test(t)) return 'لدينا إطار داخلي لأمن المعلومات، وتُحدّد ضوابط الحماية حسب المشروع. لا ندّعي امتلاك شهادة ISO.';
+      if (/24\/7|دوام|مناوب|شفت/.test(t)) return 'تغطية 24/7 تتطلب تحديد عدد الموظفين المتصلين في الوقت نفسه وجدول المناوبات.';
+      return 'تقدّم ScaleBridge فرق دعم عملاء مُدارة بالعربية والإنجليزية، وخدمات تصنيف البيانات والإشراف على المحتوى وحلول أتمتة حسب نطاق المشروع.';
+    }
 
     if (
       /compliance|security|privacy|gdpr|nda|حماية|بيانات|أمن|سرية|امتثال|iso/.test(t)
@@ -909,7 +915,9 @@ function init() {
 
       wait.textContent =
         answer +
-        '\n\nAI connection is temporarily unavailable. Please confirm with ScaleBridge.';
+        (/[\u0600-\u06ff]/.test(question)
+          ? '\n\nالاتصال بالمساعد غير متاح مؤقتاً. يُرجى تأكيد التفاصيل مع فريق ScaleBridge.'
+          : '\n\nAI connection is temporarily unavailable. Please confirm with ScaleBridge.');
 
       history.push({
         role: 'assistant',
@@ -926,7 +934,7 @@ function init() {
     }
   });
 
-  // SHORT BILINGUAL WELCOME — V16
+  // SHORT BILINGUAL WELCOME — V17
 
   messages.replaceChildren();
 
