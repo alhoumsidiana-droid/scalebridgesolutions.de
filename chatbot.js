@@ -842,6 +842,28 @@ function init() {
       wait.textContent =
         result.reply ||
         'Unable to prepare your proposal. Please try again.';
+
+      // Emphasize the final monthly estimate without inserting untrusted HTML.
+      if (result.proposalReady && result.proposalText) {
+        const costLine = String(result.proposalText)
+          .split('\\n')
+          .find(line => /^Indicative base agent cost:/i.test(line));
+        if (costLine && wait.textContent.includes(costLine)) {
+          const fullText = wait.textContent;
+          const start = fullText.indexOf(costLine);
+          const amount = costLine.match(/\\$[\\d,]+(?:\\.\\d{2})?\\/month/);
+          if (amount) {
+            const amountStart = start + costLine.indexOf(amount[0]);
+            wait.replaceChildren(
+              document.createTextNode(fullText.slice(0, amountStart)),
+              Object.assign(document.createElement('strong'), {
+                textContent: amount[0]
+              }),
+              document.createTextNode(fullText.slice(amountStart + amount[0].length))
+            );
+          }
+        }
+      }
       showProposalForm(false);
       messages.append(wait);
       messages.scrollTop = messages.scrollHeight;
