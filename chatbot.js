@@ -124,9 +124,10 @@ function init() {
     <label class="chat-proposal-field">
       Choose Your Estimation Approach
       <select name="estimateMode">
-        <option value="team">Team-Based Estimate — Based on the number of agents you need</option>
-        <option value="workload">Workload-Based Estimate — Based on your expected customer interactions</option>
+        <option value="team">Team-Based Estimate</option>
+        <option value="workload">Workload-Based Estimate</option>
       </select>
+      <small class="chat-estimate-description" aria-live="polite">Based on the number of agents you need.</small>
       <small>Both estimates are preliminary and subject to staffing validation.</small>
     </label>
     <div class="chat-workload-fields" hidden>
@@ -736,10 +737,14 @@ function init() {
   updateCoverageLabels();
 
   const estimateModeSelect = lead.querySelector('select[name="estimateMode"]');
+  const estimateDescription = lead.querySelector('.chat-estimate-description');
   const workloadFields = lead.querySelector('.chat-workload-fields');
   const teamFields = lead.querySelector('.chat-team-fields');
   function updateEstimateMode() {
     const workload = estimateModeSelect.value === 'workload';
+    estimateDescription.textContent = workload
+      ? 'Based on your expected customer interactions and handling time.'
+      : 'Based on the number of agents you need.';
     workloadFields.hidden = !workload;
     teamFields.hidden = workload;
     for (const el of workloadFields.querySelectorAll('input')) el.disabled = !workload;
