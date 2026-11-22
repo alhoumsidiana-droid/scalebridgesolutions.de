@@ -222,3 +222,14 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #d6
 .subpage-hero + .section{padding-top:100px}
 @media(max-width:980px){.subpage-hero{padding:150px 0 75px}.subpage-hero-inner{grid-template-columns:1fr}.subpage-mark{display:none}}
 @media(max-width:680px){.subpage-hero{padding:135px 0 65px}.subpage-hero h1{font-size:clamp(2.75rem,10vw,4.5rem)}.subpage-hero .hero-lead{font-size:1rem}.subpage-cta{padding:72px 0}.subpage-hero + .section{padding-top:70px}}
+
+/* Homepage editorial teasers */
+.teaser-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:70px;align-items:center}
+.teaser-layout>div:first-child>p:not(.eyebrow){max-width:600px;color:#5f6c7b;font-size:1.08rem;margin-bottom:28px}
+.teaser-stat{min-height:300px;padding:48px;border-radius:28px;background:linear-gradient(145deg,#0b2848,#061629);color:#fff;display:flex;flex-direction:column;justify-content:center;box-shadow:0 25px 60px rgba(6,22,41,.18);border:1px solid rgba(215,170,85,.2)}
+.teaser-stat>span{font-size:.7rem;font-weight:800;letter-spacing:.19em;color:#e5bf72}
+.teaser-stat strong{font-size:clamp(4rem,8vw,6.2rem);line-height:1.1;letter-spacing:-.06em}
+.teaser-stat small{color:#d0dbe7;font-size:.95rem}
+.teaser-stat a{color:#e5bf72;font-weight:750;margin-top:30px;text-decoration:none}
+.teaser-center{text-align:center;margin:34px 0 0}
+@media(max-width:800px){.teaser-layout{grid-template-columns:1fr;gap:30px}.teaser-stat{min-height:235px;padding:35px}.home-page-teaser{padding-block:75px}}
