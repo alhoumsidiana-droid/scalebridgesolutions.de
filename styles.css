@@ -233,3 +233,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #d6
 .teaser-stat a{color:#e5bf72;font-weight:750;margin-top:30px;text-decoration:none}
 .teaser-center{text-align:center;margin:34px 0 0}
 @media(max-width:800px){.teaser-layout{grid-template-columns:1fr;gap:30px}.teaser-stat{min-height:235px;padding:35px}.home-page-teaser{padding-block:75px}}
+
+/* Compact the gap below the floating mobile navigation on the homepage. */
+@media (max-width: 680px) {
+  .hero > .hero-grid { padding-top: 120px; }
+}
