@@ -11,3 +11,10 @@
 .chat-panel .chat-disclaimer{flex:0 0 auto!important;padding:0 12px 10px!important;font-size:.68rem!important;line-height:1.35!important;margin:0!important}
 .chat-panel .chat-lead:not([hidden]){flex:0 1 auto!important;max-height:42dvh!important;overflow-y:auto!important}
 @media(max-width:680px){.chat-widget.is-open .chat-panel{position:fixed!important;right:12px!important;bottom:max(12px,env(safe-area-inset-bottom))!important;height:min(78dvh,650px)!important;max-height:calc(100dvh - 24px)!important}.chat-panel .chat-header small{font-size:.7rem!important}}
+
+/* Compact launcher when chat is closed: keep branding visible, avoid covering page */
+@media(max-width:680px){
+.chat-widget:not(.is-open){right:10px!important;bottom:max(10px,env(safe-area-inset-bottom))!important}
+.chat-widget:not(.is-open) .chat-launcher{display:inline-flex!important;align-items:center!important;gap:5px!important;width:auto!important;max-width:calc(100vw - 20px)!important;height:38px!important;min-height:38px!important;padding:0 11px!important;border-radius:999px!important;font-size:.82rem!important;line-height:1!important;box-shadow:0 5px 15px rgba(6,22,41,.17)!important}
+.chat-widget:not(.is-open) .chat-launcher span{display:inline!important;font-size:.77rem!important;line-height:1!important}
+}
