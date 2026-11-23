@@ -280,3 +280,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #d6
 .chat-widget:not(.is-open) .chat-launcher span{display:none}
 .chat-widget{right:14px;bottom:max(18px,env(safe-area-inset-bottom))}
 }
+
+/* Mobile chatbot launcher: compact branded label rather than icon-only */
+@media(max-width:680px){
+.chat-widget:not(.is-open) .chat-launcher{width:auto;height:44px;min-height:44px;padding:0 14px;border-radius:999px;font-size:.9rem;gap:6px;max-width:calc(100vw - 28px)}
+.chat-widget:not(.is-open) .chat-launcher span{display:inline;font-size:.84rem;line-height:1;white-space:nowrap}
+}
