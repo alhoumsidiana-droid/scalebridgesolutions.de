@@ -729,22 +729,27 @@ function init() {
   function updateCoverageLabels() {
     const value = coverageSelect.value;
     const hints = {
-      unsure: 'We can confirm the right staffing and shifts together.',
-      business: 'Agents working during your regular business hours.',
-      night: 'Agents assigned to night shifts.',
-      '247total': 'I already know how many agents I want to hire. We will confirm the achievable 24/7 coverage.',
-      '247concurrent': 'I need this many agents online at all times. We will calculate the total team required.'
+      unsure: 'Enter the number of agents you need ScaleBridge to provide, or leave blank if you would like us to estimate it from your workload.',
+      business: 'Enter the number of agents you need ScaleBridge to provide for business-hours coverage.',
+      night: 'Enter the number of night-shift agents you need ScaleBridge to provide.',
+      '247total': 'Enter the total team size you want ScaleBridge to provide. We will confirm the achievable 24/7 coverage.',
+      '247concurrent': 'Enter how many agents must be online at the same time. We will estimate the total team size and shift plan.'
     };
     const labels = {
-      '247total': 'Total number of agents (optional)',
-      '247concurrent': 'Agents required online at the same time (optional)'
+      unsure: 'How many agents would you like ScaleBridge to provide? (Optional)',
+      business: 'How many agents would you like ScaleBridge to provide? (Optional)',
+      night: 'How many night-shift agents would you like ScaleBridge to provide? (Optional)',
+      '247total': 'Total agents needed from ScaleBridge (optional)',
+      '247concurrent': 'Agents needed online simultaneously (optional)'
     };
-    teamSizeLabel.textContent = labels[value] || 'Team size (optional)';
+    teamSizeLabel.textContent = labels[value] || labels.unsure;
     teamSizeInput.placeholder = value === '247concurrent'
-      ? 'Agents online simultaneously'
+      ? 'Agents online at the same time'
       : value === '247total'
-        ? 'Total number of agents'
-        : 'Number of agents, if known';
+        ? 'Total agents to be provided'
+        : value === 'night'
+          ? 'Night-shift agents needed'
+          : 'Agents needed from ScaleBridge';
     coverageHelp.textContent = hints[value] || hints.unsure;
     coverageTimezone.hidden = !['247total', '247concurrent', 'night'].includes(value);
   }
