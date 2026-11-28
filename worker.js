@@ -861,6 +861,9 @@ function proposal(data, history) {
   }
 
   const scope = resolveProposalScope(history);
+  const teamSize = Number(data?.teamSize);
+  const coverage = String(data?.coverage || "unsure");
+  const hasTeamSize = good(teamSize);
 
   let details =
     "Scope to be confirmed with the client.";
@@ -868,7 +871,38 @@ function proposal(data, history) {
   let amount = null;
   let requiresReview = true;
 
-  if (
+  if (hasTeamSize && coverage === "247concurrent") {
+    const p = coveragePlan(teamSize);
+    details =
+      `24/7: ${teamSize} agents online simultaneously.\n` +
+      `Weekly coverage: ${p.hours} agent-hours.\n` +
+      `Illustrative staffing: ${p.day} standard-rate FTE x $900 = ${usd(p.day * RATES.agent)}; ` +
+      `${p.night} night-rate FTE x $1,050 = ${usd(p.night * RATES.nightAgent)}.\n` +
+      `Indicative team: ${p.total} FTE.\n` +
+      `Assumptions: 16 standard-rate / 8 night-rate hours per day, 40 paid hours/FTE/week, 25% shrinkage.\n` +
+      `Final roster, customer time zone, night window and SLAs require confirmation; management and QA excluded.`;
+    amount = p.cost;
+    requiresReview = true;
+
+  } else if (hasTeamSize && coverage === "247total") {
+    details =
+      `24/7 coverage with ${teamSize} total agents. Day/night shift distribution and the final roster require confirmation; management and QA excluded.`;
+
+  } else if (hasTeamSize && coverage === "night") {
+    amount = teamSize * RATES.nightAgent;
+    details =
+      `${teamSize} Night Shift Agents x $1,050 = ${usd(amount)}\n` +
+      `Base headcount only. Relief staffing and management excluded; shift hours require confirmation.`;
+    requiresReview = true;
+
+  } else if (hasTeamSize) {
+    amount = teamSize * RATES.agent;
+    details =
+      `${teamSize} Standard Support Agents x $900 = ${usd(amount)}\n` +
+      `Base headcount only. Relief staffing and management excluded.`;
+    requiresReview = coverage === "unsure";
+
+  } else if (
     scope?.kind === "247" &&
     scope.n &&
     scope.mode === "concurrent"
@@ -1029,6 +1063,13 @@ async function notify(
     !env.RESEND_API_KEY ||
     !env.NOTIFY_FROM_EMAIL
   ) {
+    console.error(
+      "Resend configuration missing",
+      JSON.stringify({
+        apiKeyConfigured: Boolean(env.RESEND_API_KEY),
+        senderConfigured: Boolean(env.NOTIFY_FROM_EMAIL)
+      })
+    );
     return false;
   }
 
@@ -1252,8 +1293,9 @@ export default {
       return json(
         {
           status: "ok",
-          service: "ScaleBridge AI V18",
+          service: "ScaleBridge AI V19",
           aiConfigured: Boolean(env.AI),
+          emailNotificationsConfigured: Boolean(env.RESEND_API_KEY && env.NOTIFY_FROM_EMAIL),
           shrinkageDefault: "25%"
         },
         200,
