@@ -892,14 +892,16 @@ function proposal(data, history) {
   } else if (hasTeamSize && coverage === "night") {
     amount = teamSize * RATES.nightAgent;
     details =
-      `Requested night-shift team from ScaleBridge: ${teamSize} agents.\n` +\n      `${teamSize} Night Shift Agents x $1,050 = ${usd(amount)}\n` +
+      `Requested night-shift team from ScaleBridge: ${teamSize} agents.\n` +
+      `${teamSize} Night Shift Agents x $1,050 = ${usd(amount)}\n` +
       `Base headcount only. Relief staffing and management excluded; shift hours require confirmation.`;
     requiresReview = true;
 
   } else if (hasTeamSize) {
     amount = teamSize * RATES.agent;
     details =
-      `Requested team from ScaleBridge: ${teamSize} standard support agents.\n` +\n      `${teamSize} Standard Support Agents x $900 = ${usd(amount)}\n` +
+      `Requested team from ScaleBridge: ${teamSize} standard support agents.\n` +
+      `${teamSize} Standard Support Agents x $900 = ${usd(amount)}\n` +
       `Base headcount only. Relief staffing and management excluded.`;
     requiresReview = coverage === "unsure";
 
