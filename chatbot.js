@@ -25,7 +25,16 @@ function init() {
   function bubble(value, who = 'bot') {
     const p = document.createElement('p');
     p.className = 'chat-bubble ' + (who === 'user' ? 'chat-user' : '');
-    p.textContent = String(value || '');
+    const parts = String(value || '').split(/(\\*\\*[\\s\\S]+?\\*\\*)/g);
+    for (const part of parts) {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const strong = document.createElement('strong');
+        strong.textContent = part.slice(2, -2);
+        p.append(strong);
+      } else {
+        p.append(document.createTextNode(part));
+      }
+    }
     p.dir = 'auto';
     messages.append(p);
     messages.scrollTop = messages.scrollHeight;
