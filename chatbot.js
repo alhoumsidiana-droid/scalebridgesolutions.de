@@ -25,7 +25,7 @@ function init() {
   function bubble(value, who = 'bot') {
     const p = document.createElement('p');
     p.className = 'chat-bubble ' + (who === 'user' ? 'chat-user' : '');
-    const parts = String(value || '').split(/(\\*\\*[\\s\\S]+?\\*\\*)/g);
+    const parts = String(value || '').split(/(\*\*[\s\S]+?\*\*)/g);
     for (const part of parts) {
       if (part.startsWith('**') && part.endsWith('**')) {
         const strong = document.createElement('strong');
