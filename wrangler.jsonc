@@ -3,6 +3,9 @@
   "name": "scalebridge-ai",
   "main": "worker.js",
   "compatibility_date": "2026-11-15",
+  "vars": {
+    "NOTIFY_FROM_EMAIL": "notifications@scalebridgesolutions.de"
+  },
   "ai": {
     "binding": "AI"
   }
