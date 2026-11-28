@@ -979,8 +979,7 @@ Transparent Pricing. No Hidden Fees.
 Contact: ${EMAIL}`;
 
   const displayText = text
-    .replace(/^(Requested (?:team|night-shift team).*|Indicative team:.*|ESTIMATED MONTHLY TOTAL:.*)$/gm, "**$1**")
-    .replace(/\$[\d,]+(?:\.\d+)?/g, match => "**" + match + "**");
+    .replace(/^(Requested (?:team|night-shift team).*|Indicative team:.*|ESTIMATED MONTHLY TOTAL:.*)$/gm, line => "**" + line + "**");
 
   return {
     reply: displayText,
@@ -1058,8 +1057,7 @@ function workloadProposal(data, history) {
     "Contact: " + EMAIL
   ].join("\n");
   const displayText = text
-    .replace(/^(Indicative workload-equivalent team:.*|Indicative workload-only base agent cost:.*)$/gm, "**$1**")
-    .replace(/\$[\d,]+(?:\.\d+)?/g, match => "**" + match + "**");
+    .replace(/^(Indicative workload-equivalent team:.*|Indicative workload-only base agent cost:.*)$/gm, line => "**" + line + "**");
 
   return { reply: displayText, proposalText: text, proposalReady: true, requiresReview: true, workloadBased: true };
 }
