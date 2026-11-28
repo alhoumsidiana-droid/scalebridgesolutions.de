@@ -1057,7 +1057,11 @@ function workloadProposal(data, history) {
     "Client notes: " + safe(data.details, 1000),
     "Contact: " + EMAIL
   ].join("\n");
-  return { reply: text, proposalText: text, proposalReady: true, requiresReview: true, workloadBased: true };
+  const displayText = text
+    .replace(/^(Indicative workload-equivalent team:.*|Indicative workload-only base agent cost:.*)$/gm, "**$1**")
+    .replace(/\$[\d,]+(?:\.\d+)?/g, match => "**" + match + "**");
+
+  return { reply: displayText, proposalText: text, proposalReady: true, requiresReview: true, workloadBased: true };
 }
 
 async function notify(
