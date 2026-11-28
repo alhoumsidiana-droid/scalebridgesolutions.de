@@ -980,12 +980,7 @@ Contact: ${EMAIL}`;
 
   const displayText = text
     .replace(/^(Requested (?:team|night-shift team).*|Indicative team:.*|ESTIMATED MONTHLY TOTAL:.*)$/gm, "**$1**")
-    .replace(/\$[\d,]+(?:\.\d+)?/g, "**  return {
-    reply: text,
-    proposalText: text,
-    proposalReady: true,
-    requiresReview
-  };**");
+    .replace(/\$[\d,]+(?:\.\d+)?/g, match => "**" + match + "**");
 
   return {
     reply: displayText,
