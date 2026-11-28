@@ -875,10 +875,11 @@ function proposal(data, history) {
     const p = coveragePlan(teamSize);
     details =
       `24/7 coverage requested: ${teamSize} agents online simultaneously.\n` +
-      `Weekly coverage: ${p.hours} agent-hours.\n` +
-      `Illustrative staffing: ${p.day} standard-rate FTE x $900 = ${usd(p.day * RATES.agent)}; ` +
-      `${p.night} night-rate FTE x $1,050 = ${usd(p.night * RATES.nightAgent)}.\n` +
-      `Indicative team: ${p.total} FTE.\n` +
+      `Weekly coverage: ${p.hours.toLocaleString("en-US")} agent-hours.\n\n` +
+      `INDICATIVE STAFFING:\n` +
+      `• Standard-rate day coverage: ${p.day} FTE × $900 = ${usd(p.day * RATES.agent)}/month\n` +
+      `• Night-shift coverage: ${p.night} FTE × $1,050 = ${usd(p.night * RATES.nightAgent)}/month\n` +
+      `Indicative team: ${p.total} FTE.\n\n` +
       `Assumptions: 16 standard-rate / 8 night-rate hours per day, 40 paid hours/FTE/week, 25% shrinkage.\n` +
       `Final roster, customer time zone, night window and SLAs require confirmation; management and QA excluded.`;
     amount = p.cost;
@@ -975,8 +976,17 @@ Transparent Pricing. No Hidden Fees.
 
 Contact: ${EMAIL}`;
 
-  return {
+  const displayText = text
+    .replace(/^(Requested (?:team|night-shift team).*|Indicative team:.*|ESTIMATED MONTHLY TOTAL:.*)$/gm, "**$1**")
+    .replace(/\$[\d,]+(?:\.\d+)?/g, "**  return {
     reply: text,
+    proposalText: text,
+    proposalReady: true,
+    requiresReview
+  };**");
+
+  return {
+    reply: displayText,
     proposalText: text,
     proposalReady: true,
     requiresReview
