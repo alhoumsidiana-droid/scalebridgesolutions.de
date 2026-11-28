@@ -874,7 +874,7 @@ function proposal(data, history) {
   if (hasTeamSize && coverage === "247concurrent") {
     const p = coveragePlan(teamSize);
     details =
-      `24/7: ${teamSize} agents online simultaneously.\n` +
+      `24/7 coverage requested: ${teamSize} agents online simultaneously.\n` +
       `Weekly coverage: ${p.hours} agent-hours.\n` +
       `Illustrative staffing: ${p.day} standard-rate FTE x $900 = ${usd(p.day * RATES.agent)}; ` +
       `${p.night} night-rate FTE x $1,050 = ${usd(p.night * RATES.nightAgent)}.\n` +
@@ -886,19 +886,19 @@ function proposal(data, history) {
 
   } else if (hasTeamSize && coverage === "247total") {
     details =
-      `24/7 coverage with ${teamSize} total agents. Day/night shift distribution and the final roster require confirmation; management and QA excluded.`;
+      `Requested team size from ScaleBridge: ${teamSize} total agents for 24/7 coverage. Day/night shift distribution and the final roster require confirmation; management and QA excluded.`;
 
   } else if (hasTeamSize && coverage === "night") {
     amount = teamSize * RATES.nightAgent;
     details =
-      `${teamSize} Night Shift Agents x $1,050 = ${usd(amount)}\n` +
+      `Requested night-shift team from ScaleBridge: ${teamSize} agents.\n` +\n      `${teamSize} Night Shift Agents x $1,050 = ${usd(amount)}\n` +
       `Base headcount only. Relief staffing and management excluded; shift hours require confirmation.`;
     requiresReview = true;
 
   } else if (hasTeamSize) {
     amount = teamSize * RATES.agent;
     details =
-      `${teamSize} Standard Support Agents x $900 = ${usd(amount)}\n` +
+      `Requested team from ScaleBridge: ${teamSize} standard support agents.\n` +\n      `${teamSize} Standard Support Agents x $900 = ${usd(amount)}\n` +
       `Base headcount only. Relief staffing and management excluded.`;
     requiresReview = coverage === "unsure";
 
